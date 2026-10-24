@@ -39,9 +39,9 @@ scopes de escrita. Kick: app no portal de developers, scope channel:read, com PK
 Local: manter `npm run dev` e `npm run streams:watch` em execução. O botão
 Verificar agora permite validar uma ligação sem esperar pelo agendador.
 
-Produção: `/api/cron/streams`, com Authorization: Bearer CRON_SECRET, está
-configurado para cada minuto em vercel.json. É necessário alojamento/agendador
-que suporte essa frequência. Uma visita ao site não inicia a sincronização.
+Produção: `/api/cron/streams`, com Authorization: Bearer CRON_SECRET, precisa de
+um agendador externo configurado para cada minuto. Ver `external-scheduler.md`.
+vercel.json não ativa tarefas internas. Uma visita ao site não inicia a sincronização.
 O worker consulta até dez canais por execução, por ordem de última verificação;
 com mais canais, aumentar a capacidade antes de prometer deteção em um minuto.
 Erros e limites da plataforma podem atrasar a deteção. Transmissões que começam

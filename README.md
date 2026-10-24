@@ -160,7 +160,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ## Sincronização
 
-Dois crons, definidos em `vercel.json`:
+As rotas abaixo precisam de um agendador externo. O `vercel.json` não ativa crons
+internos, para permitir o deploy no plano Hobby. Ver [configuração do agendador](docs/external-scheduler.md),
+incluindo a deteção de lives e a geração dos recaps.
 
 | Rota | Cadência | O que faz |
 |---|---|---|
