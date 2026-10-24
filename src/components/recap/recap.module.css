@@ -1,0 +1,257 @@
+.viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #08080a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.stage {
+  --paper: var(--color-fg, #ededef);
+  --ink: var(--color-canvas, #08080a);
+  --recap-accent: var(--color-accent, #f49400);
+  --foreground: var(--paper);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  container-type: inline-size;
+  background: var(--ink);
+  color: var(--foreground);
+}
+
+.stage[data-controls=hidden], .stage[data-controls=hidden] button { cursor: none; }
+.viewport[data-paused=true] * { animation-play-state: paused !important; }
+.scene, .opening, .anticipation, .views { position: absolute; inset: 0; overflow: hidden; }
+.stage h1 { margin: 0; font-weight: 900; letter-spacing: -.065em; }
+.stage h1 em { font-style: normal; }
+
+/* The logo belongs to the opening composition, never to permanent chrome. */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2cqw;
+  font-size: 2.4cqw;
+  font-weight: 800;
+  letter-spacing: -.06em;
+  line-height: 1;
+  animation: typeArrive .9s .4s cubic-bezier(.18, 1, .3, 1) both;
+}
+
+.bars { display: inline-flex; gap: .17em; height: .9em; transform: skew(-16deg); }
+.bars i { width: .22em; height: 100%; background: currentColor; }
+.brand .bars { color: var(--recap-accent); }
+
+/* 01 — The title is the centre of a dark orbital field. */
+.opening { background: var(--ink); color: var(--paper); }
+.openingGraphics {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* Four corner accents frame a clear central reading area. */
+.openingGraphics > div { animation: shapeReveal 1.4s cubic-bezier(.16, 1, .3, 1) both; }
+.wrappedFlower {
+  position: absolute;
+  width: 35vmin;
+  aspect-ratio: 1;
+  left: 4%;
+  top: -7vmin;
+}
+.wrappedFlower svg { display: block; width: 100%; height: 100%; fill: #ff70c5; animation: orbitTurn 40s linear infinite; }
+.wrappedFlower circle { fill: #fc4d24; }
+.wrappedTunnel {
+  position: absolute;
+  width: 43vmin;
+  aspect-ratio: 1;
+  right: -4vmin;
+  bottom: -9vmin;
+  rotate: -18deg;
+  animation-delay: .18s !important;
+}
+.wrappedTunnel i {
+  position: absolute;
+  inset: calc(var(--i) * 5.5%);
+  border: 1.1vmin solid #c5ff39;
+  border-radius: 29%;
+  animation: wrappedTwist 9s cubic-bezier(.45, 0, .55, 1) infinite alternate;
+  animation-delay: calc(var(--i) * -.24s);
+}
+.wrappedTunnel i:nth-child(even) { border-color: #8860ff; }
+.wrappedSteps {
+  position: absolute;
+  left: 7%;
+  bottom: 8%;
+  width: 28vmin;
+  height: 18vmin;
+  rotate: -24deg;
+  animation-delay: .26s !important;
+}
+.wrappedSteps i {
+  position: absolute;
+  left: calc(var(--i) * 16.8%);
+  bottom: 0;
+  width: 11.5%;
+  height: 100%;
+  background: #8860ff;
+  transform-origin: center;
+  animation: wrappedBounce 4.8s cubic-bezier(.45, 0, .55, 1) infinite;
+  animation-delay: calc(var(--i) * -.3s);
+}
+.wrappedSteps i:nth-child(2n) { background: #ff70c5; }
+.wrappedStar {
+  position: absolute;
+  right: 11%;
+  top: 12%;
+  width: 18vmin;
+  aspect-ratio: 1;
+  animation-delay: .12s !important;
+}
+.wrappedStar svg { display: block; width: 100%; height: 100%; fill: #c5ff39; animation: wrappedSpin 12s cubic-bezier(.76, 0, .24, 1) infinite; }
+@keyframes shapeReveal { from { opacity: 0; transform: translateY(24px) scale(.85); } to { opacity: 1; transform: none; } }
+@keyframes wrappedTwist { from { transform: rotate(-8deg); } to { transform: rotate(24deg); } }
+@keyframes wrappedBounce { 0%, 100% { transform: scaleY(.5); } 50% { transform: scaleY(1); } }
+@keyframes wrappedSpin { 0%, 20% { transform: rotate(-12deg); } 45%, 70% { transform: rotate(78deg); } 95%, 100% { transform: rotate(168deg); } }
+@media (max-aspect-ratio: 3/4) {
+  .wrappedFlower { width: 48vmin; left: -9%; top: 3%; }
+  .wrappedStar { width: 23vmin; right: 9%; top: 17%; }
+  .wrappedSteps { width: 34vmin; height: 23vmin; left: 7%; bottom: 13%; }
+  .wrappedTunnel { width: 58vmin; right: -16vmin; bottom: -3vmin; }
+  .wrappedTunnel i { border-width: 1.5vmin; }
+}
+.titleBlock {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: 92%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.4cqw;
+  text-align: center;
+}
+.openingTitle { font-size: 5cqw; line-height: 1; white-space: nowrap; animation: typeArrive .9s .25s cubic-bezier(.18, 1, .3, 1) both; }
+.openingTitle > span { font-weight: 300; }
+.edition { margin: 0; font-size: 1.2cqw; line-height: 1; letter-spacing: .22em; color: #b9b9c2; animation: typeArrive .9s .45s cubic-bezier(.18, 1, .3, 1) both; }
+
+/* 02 — Counter-moving bands frame the phrase above and below its clear centre. */
+.anticipation { background: var(--ink); color: var(--paper); }
+.ribbonEntrance { position: absolute; inset: 0; animation: ribbonsArrive 1.2s cubic-bezier(.18, 1, .3, 1) both; }
+.ribbonBank {
+  position: absolute;
+  left: -50cqw;
+  top: -6cqw;
+  width: 200cqw;
+  height: 14cqw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4cqw;
+  transform: rotate(-8deg);
+  animation: ribbonSway 13s ease-in-out infinite alternate;
+}
+.ribbonBank:nth-child(2) { top: auto; bottom: -6cqw; animation-direction: reverse; }
+.ribbonLane {
+  height: 3.3cqw;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 3cqw;
+  animation: conveyor 16s linear infinite;
+  animation-delay: calc(var(--i) * -4.2s);
+}
+.ribbonLane:nth-child(2) { animation-direction: reverse; animation-duration: 20s; }
+.ribbonLane:nth-child(3) { animation-duration: 14s; }
+.ribbonLane > i { display: block; flex: 0 0 27cqw; background: #1c1c21; }
+.ribbonLane > i:nth-child(3n+2) { background: var(--paper); }
+.ribbonLane > i:nth-child(3n) { background: #303037; }
+.ribbonLane:nth-child(2) > i:nth-child(3n) { background: var(--recap-accent); }
+.statement { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: 90%; text-align: center; z-index: 2; font-size: 7.5cqw; line-height: 1.18; }
+.statement > span { display: block; animation: typeArrive .85s .15s cubic-bezier(.18, 1, .3, 1) both; }
+.statement > span:nth-child(2) { animation-delay: .65s; }
+
+/* 03 — Preserve the radial motion, speed response and impact; colour is an accent. */
+.views { --charge: 0; background: var(--ink); color: var(--paper); }
+.burstEnvelope { position: absolute; inset: 0; transform: scale(calc(1 + var(--charge) * .18)); opacity: calc(.7 + var(--charge) * .3); mask-image: radial-gradient(ellipse 43% 23% at center, transparent 65%, #000 100%); }
+.burst { position: absolute; inset: 0; animation: burstTurn 55s linear infinite; }
+.burst > span { position: absolute; top: 50%; left: 50%; width: 64cqw; height: 0; transform: rotate(calc(var(--i) * 10deg)); transform-origin: left center; }
+.burst i { display: block; width: 30cqw; height: .22cqw; margin-left: 24cqw; background: var(--paper); animation: rayFlow 4s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -.19s); }
+.burst > span:nth-child(3n) i { height: 1.1cqw; width: 20cqw; background: #26262d; }
+.burst > span:nth-child(3n+1) i { height: .45cqw; margin-left: 31cqw; }
+.burst > span:nth-child(6n+2) i { height: .7cqw; width: 24cqw; background: var(--recap-accent); }
+.views[data-landed=false] .burst i { animation-duration: .9s; }
+.statistic { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.number { display: block; white-space: nowrap; line-height: 1; letter-spacing: -.07em; font-variant-numeric: tabular-nums; animation: numberArrive .65s .15s cubic-bezier(.18, 1, .3, 1) both; }
+.unit { display: block; font-size: 5.5cqw; line-height: 1; letter-spacing: -.04em; margin-top: 1.3cqw; animation: typeArrive .8s .35s cubic-bezier(.18, 1, .3, 1) both; }
+.views[data-landed=true] .number { animation: numberImpact .65s cubic-bezier(.2, .8, .3, 1) both; }
+.shockwave { position: absolute; width: 35cqw; height: 35cqw; left: 50%; top: 50%; margin: -17.5cqw; border: .7cqw solid var(--recap-accent); border-radius: 50%; opacity: 0; }
+.views[data-landed=true] .shockwave { animation: shockwave 1.2s ease-out both; }
+
+/* Scene-owned shapes cover the frame and become the next scene's solid field.
+   The cover is opaque at 450 ms, when useRecapNavigation swaps the content.
+   It then disappears against the identical colour underneath — no page fade. */
+.transition { --destination: var(--ink); position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+.transition[data-kind=circle] > i:first-child { position: absolute; width: 65cqw; height: 65cqw; left: calc(50% - 32.5cqw); top: calc(50% - 32.5cqw); border-radius: 50%; border: .18cqw solid var(--recap-accent); background: var(--destination); animation: circleTakeover var(--transition-duration) cubic-bezier(.65, 0, .25, 1) both; }
+.transition[data-kind=circle] > i:not(:first-child) { display: none; }
+.transition[data-kind=bars] { inset: -30% -25%; display: flex; transform: skew(-19deg); }
+.transition[data-kind=bars] > i { flex: 1; background: var(--destination); box-shadow: inset -.35cqw 0 var(--recap-accent); transform-origin: left center; animation: ribbonTakeover var(--transition-duration) cubic-bezier(.65, 0, .25, 1) both; }
+.transition[data-kind=bars] > i:nth-child(2) { animation-delay: .03s; }
+.transition[data-kind=bars] > i:nth-child(3) { animation-delay: .06s; }
+.transition[data-direction='-1'] > i { animation-direction: normal; transform-origin: right center; }
+
+/* Controls are dormant until pointer activity, edge hover or keyboard focus. */
+.navigation { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.stage button { cursor: pointer; }
+.stage button:disabled { cursor: default; }
+.stage button:focus-visible, .stage a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+.utilities, .progress, .replay { opacity: 0; pointer-events: none; transition: opacity .3s; }
+.stage[data-controls=visible] .utilities, .stage[data-controls=visible] .progress, .stage[data-controls=visible] .replay,
+.utilities:has(:focus-visible), .progress:has(:focus-visible), .replay:focus-visible { opacity: .7; pointer-events: auto; }
+.utilities { position: absolute; right: 3.8%; top: 5%; z-index: 9; display: flex; gap: .4cqw; }
+.utilities button, .utilities a, .replay { display: grid; place-items: center; width: 2.4cqw; height: 2.4cqw; min-width: 28px; min-height: 28px; color: inherit; }
+.utilities svg, .replay svg { width: 1.1cqw; height: 1.1cqw; min-width: 13px; min-height: 13px; }
+.edge { position: absolute; top: 15%; bottom: 15%; width: 5%; display: grid; place-items: center; color: inherit; pointer-events: auto; }
+.previousEdge { left: 0; }
+.nextEdge { right: 0; }
+.edge svg { width: 1.4cqw; height: 1.4cqw; min-width: 16px; min-height: 16px; opacity: 0; transition: opacity .25s; }
+.stage[data-controls=visible] .edge:not(:disabled) svg { opacity: .35; }
+.edge:not(:disabled):hover svg, .edge:focus-visible svg { opacity: .8; }
+.edge:disabled { pointer-events: none; }
+.edge:focus-visible { outline-offset: -6px !important; }
+.progress { position: absolute; bottom: 4%; left: 50%; transform: translateX(-50%); display: flex; gap: .1cqw; }
+.progress button { display: grid; place-items: center; width: 1.5cqw; height: 2cqw; min-width: 20px; min-height: 24px; }
+.progress span { display: block; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .3; }
+.progress [aria-current=step] span { opacity: 1; }
+.replay { position: absolute; right: 4%; bottom: 4%; }
+.notice { position: absolute; z-index: 12; left: 50%; bottom: 10%; transform: translateX(-50%); background: var(--paper); color: var(--ink); padding: 12px 20px; font-size: 13px; }
+.empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 3cqw; }
+.empty h1 { font-size: 5cqw; line-height: 1; }
+.empty a { display: flex; align-items: center; gap: 1cqw; font-size: 1cqw; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@keyframes typeArrive { from { opacity: 0; transform: translateY(3cqw) rotate(2deg); } to { opacity: 1; transform: none; } }
+@keyframes haloArrive { from { transform: rotate(-45deg) scale(.8); } to { transform: none; } }
+@keyframes haloDrift { from { transform: scale(.98); } to { transform: scale(1.035); } }
+@keyframes orbitTurn { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes ribbonsArrive { from { transform: scale(1.3) rotate(-8deg); } to { transform: none; } }
+@keyframes ribbonSway { from { transform: rotate(-8deg); } to { transform: rotate(-4deg); } }
+@keyframes conveyor { from { transform: translateX(0); } to { transform: translateX(-90cqw); } }
+@keyframes burstTurn { to { transform: rotate(360deg); } }
+@keyframes rayFlow { from { transform: translateX(-3cqw) scaleX(.8); } to { transform: translateX(7cqw) scaleX(1.12); } }
+@keyframes numberArrive { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+@keyframes numberImpact { 35% { transform: scale(1.035); } 100% { transform: scale(1); } }
+@keyframes shockwave { from { opacity: .35; transform: scale(.8); } to { opacity: 0; transform: scale(4); } }
+@keyframes circleTakeover { 0% { transform: scale(0); } 44%, 58% { transform: scale(4); opacity: 1; } 58.1%, 100% { transform: scale(4); opacity: 0; } }
+@keyframes ribbonTakeover { 0% { transform: scaleX(0); } 38%, 58% { transform: scaleX(1.01); opacity: 1; } 58.1%, 100% { transform: scaleX(1.01); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage *, .stage *::before, .stage *::after { animation: none !important; transition: none !important; }
+  .transition { display: none; }
+}

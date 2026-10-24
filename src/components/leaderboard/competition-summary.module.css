@@ -1,0 +1,77 @@
+.timerSection { display: flex; justify-content: center; padding: 32px 0; }
+.countdown { width: min(100%, 560px); padding: 16px 0; text-align: center; }
+.timerLabel { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; text-transform: uppercase; color: #a1a1aa; }
+.clock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }
+.clockUnit { position: relative; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.clockUnit strong { color: #f4f4f5; font-size: 72px; line-height: 1.2; font-weight: 600; font-variant-numeric: tabular-nums; }
+.clockUnit > span:last-child { color: #71717a; font-size: 9px; text-transform: uppercase; }
+.clockUnit .clockSeparator { position: absolute; left: 0; top: 0; transform: translateX(-50%); font-size: 44px; line-height: 86.4px; font-weight: 400; color: #62626b; }
+.eventEnded { margin-top: 16px; font-size: 19px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.stat { min-width: 0; border: 1px solid #ffffff0f; border-radius: var(--radius-ui); padding: 16px; background: #141417; transition: border-color 150ms ease; }
+.stat:hover { border-color: #ffffff29; }
+.statLabel { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; line-height: 16px; font-weight: 500; color: #a1a1aa; }
+.statIcon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 6px; border-radius: var(--radius-ui); background: #27272acc; color: #d4d4d8; }
+.statLabel svg { flex-shrink: 0; }
+.statLabelShort { display: none; }
+.stat > strong { display: block; color: #fff; font-size: 30px; font-weight: 900; line-height: 36px; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
+.stat > span { display: block; margin-top: 4px; color: #71717a; font-size: 11px; line-height: 16.5px; font-weight: 500; }
+.podiumSection { padding-top: 40px; }
+.podiumSection h2 { color: #fff; font-size: 24px; font-weight: 900; }
+.podiumSection h2 > svg { color: #fff; }
+.podiumSection h2 + p { font-size: 14px; color: #a1a1aa; }
+.podium { max-width: 896px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: end; padding-top: 26px; }
+.podiumCard { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 20px; border: 1px solid #27272a; border-radius: var(--radius-ui); background: #111113; text-align: center; color: #fff; }
+.podiumCard:hover { border-color: #3f3f46; }
+.place1 { order: 2; padding: 24px; transform: translateY(-12px); box-shadow: 0 0 24px #ffffff08; }
+.place2 { order: 1; }.place3 { order: 3; }
+.podiumMedallion { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #3f3f46; border-radius: 50%; color: #d4d4d8; background: #27272a; font-size: 12px; font-weight: 900; }
+.place1 .podiumMedallion { top: -20px; width: 36px; height: 36px; background: #fff; color: #09090b; border-color: #d4d4d8; box-shadow: 0 4px 6px #0002; }
+.leaderBanner { display: block; max-width: 100%; padding: 2px 10px; margin: 8px 0; border-radius: var(--radius-ui); background: #fff; color: #09090b; font-size: 10px; font-weight: 900; line-height: 1.5; text-transform: uppercase; }
+.podiumIdentity { width: 100%; min-width: 0; }
+.podiumAvatar { position: relative; width: fit-content; margin: 8px auto 12px; }
+.podiumAvatar > span:first-child { width: 80px; height: 80px; border: 1px solid #3f3f46; box-shadow: 0 1px 2px #0001; }
+.place1 .podiumAvatar { margin: 8px auto; }
+.place1 .podiumAvatar > span:first-child { width: 96px; height: 96px; border: 2px solid #fff; }
+.winnerRank { position: absolute; right: -4px; bottom: -4px; padding: 2px 8px; border: 1px solid #d4d4d8; border-radius: var(--radius-ui); color: #09090b; background: #fff; font-size: 12px; font-weight: 900; line-height: 1.3; }
+.podiumIdentity h3 { color: #fff; font-size: 16px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.place1 .podiumIdentity h3 { font-size: 18px; font-weight: 900; }
+.podiumIdentity p { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 2px; font-size: 12px; line-height: 1.4; color: #a1a1aa; overflow-wrap: anywhere; }
+.podiumIdentity p svg { flex-shrink: 0; color: #71717a; }
+.place1 .podiumIdentity p { color: #d4d4d8; font-weight: 600; }
+.podiumMetrics { display: grid; gap: 6px; width: 100%; margin-top: 16px; padding: 12px; border: 1px solid #27272acc; border-radius: var(--radius-ui); background: #18181be6; }
+.podiumMetrics > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; line-height: 1.4; }
+.podiumMetrics > div > span { display: flex; align-items: center; gap: 4px; color: #a1a1aa; text-align: left; }
+.podiumMetrics svg { flex-shrink: 0; }
+.podiumMetrics strong { color: #d4d4d8; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.podiumMetrics .podiumViews strong { color: #fff; font-weight: 700; }
+.podiumMetrics .podiumAverage { padding-top: 6px; border-top: 1px solid #27272acc; }
+.podiumMetrics .podiumAverage > span { color: #d4d4d8; font-weight: 500; }
+.podiumMetrics .podiumAverage svg, .podiumMetrics .podiumAverage strong { color: #fff; }
+.place1 .podiumMetrics { gap: 8px; padding: 14px; border-color: #3f3f46cc; background: #18181b; }
+.place1 .podiumViews strong { font-size: 18px; font-weight: 900; }
+.place1 .podiumViews > span { color: #d4d4d8; font-weight: 500; }
+.place1 .podiumAverage { padding-top: 8px; }
+.place1 .podiumAverage > span { color: #fff; font-weight: 700; }
+.place1 .podiumAverage strong { font-size: 16px; font-weight: 900; }
+.podiumPrize { width: 100%; margin-top: 16px; padding: 6px 8px; border-radius: var(--radius-ui); color: #d4d4d8; background: #27272ab3; font-size: 12px; font-weight: 600; line-height: 1.4; }
+.place1 .podiumPrize { padding: 8px; color: #09090b; background: #fff; font-weight: 700; }
+@media (max-width: 1000px) { .podium { gap: 16px; }.podiumCard { padding: 16px; }.place1 { padding: 20px; }.podiumMetrics { padding: 10px; }.place1 .podiumMetrics { padding: 10px; }.podiumMetrics > div { font-size: 11px; }.leaderBanner { font-size: 9px; } }
+@media (max-width: 767px) {
+  .timerSection { padding: 24px 0; }.countdown { padding: 16px 0; }.clockUnit strong { font-size: clamp(42px, 9vw, 64px); }.clockUnit .clockSeparator { line-height: 1.2; font-size: clamp(42px, 9vw, 64px); }
+  .podiumSection { padding-top: 30px; }.podiumSection h2 { font-size: 20px; }.podiumSection h2 + p { font-size: 12px; }
+  .podium { grid-template-columns: minmax(0, 1fr); max-width: 420px; gap: 28px; padding-top: 25px; }.podiumCard { padding: 20px; }.place1 { order: 1; padding: 24px; transform: none; }.place2 { order: 2; }.place3 { order: 3; }
+  .podiumMetrics { padding: 12px; }.place1 .podiumMetrics { padding: 14px; }.podiumMetrics > div { font-size: 12px; }.leaderBanner { font-size: 10px; }
+}
+@media (max-width: 370px) { .podiumCard { padding: 18px; }.place1 { padding: 20px; } }
+
+@media (max-width: 1023px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639px) {
+  .stats { gap: 10px; }
+  .stat { padding: 12px; }
+  .statLabel { align-items: flex-start; margin-bottom: 4px; line-height: 20px; }
+  .statIcon { padding: 3px; }
+  .stat > strong { font-size: 24px; line-height: 32px; }
+  .stat > span, .statLabelFull { display: none; }
+  .statLabelShort { display: inline; }
+}

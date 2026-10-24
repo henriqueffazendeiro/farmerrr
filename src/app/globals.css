@@ -1,0 +1,147 @@
+@import 'tailwindcss';
+
+/* ──────────────────────────────────────────────────────────────────────────
+   farmerrr — design tokens
+
+   Preto, cinzentos e branco, com uma família quente por cima: o laranja
+   (secundária) e o seu tom claro (terciária). O ouro/prata/bronze do pódio
+   são informação, não decoração. Sem gradientes, sem halos, sem brilhos.
+   ────────────────────────────────────────────────────────────────────────── */
+@theme {
+  /* Superfícies */
+  --color-canvas: #08080a;
+  --color-surface: #0e0e11;
+  --color-surface-2: #141418;
+  --color-surface-3: #1c1c21;
+
+  /* Texto */
+  --color-fg: #ededef;
+  --color-fg-muted: #9a9aa3;
+  --color-fg-subtle: #61616b;
+
+  /* Linhas */
+  --color-line: #222227;
+  --color-line-strong: #33333b;
+
+  /* Secundária: o laranja da marca. Terciária: o tom claro, para o que
+     precisa de calor sem gritar (hovers, sobrelinhas, aspas). */
+  --color-brand: #f49400;
+  --color-brand-bright: #fac980; /* terciária */
+  --color-brand-deep: #c37600;
+  --color-accent: #f49400;
+  --color-accent-soft: #fac980;
+
+  /* Pódio — a única cor que carrega informação */
+  --color-gold: #d9a441;
+  --color-silver: #b9bcc4;
+  --color-bronze: #9a6b47;
+
+  /* Estado — o "ao vivo" e as subidas usam o próprio laranja. As descidas
+     ficam num cinzento frio em vez de vermelho: contra um acento quente, um
+     vermelho ao lado era ruído, e quem desce merece é ficar apagado. */
+  --color-live: #f49400;
+  --color-up: #f49400;
+  --color-down: #7c8494;
+  --color-danger: #ef4444;
+
+  /* Tipografia */
+  --font-sans:
+    'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, sans-serif;
+
+  /* Raios */
+  /* Shared corner radius, based on the Participar button. Keep circles round. */
+  --radius-ui: 5px;
+  --radius-xs: var(--radius-ui);
+  --radius-sm: var(--radius-ui);
+  --radius-md: var(--radius-ui);
+  --radius-lg: var(--radius-ui);
+  --radius-xl: var(--radius-ui);
+  --radius-2xl: var(--radius-ui);
+  --radius-3xl: var(--radius-ui);
+  --radius-4xl: var(--radius-ui);
+
+  /* Animação */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbar discreta */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+@media (max-width: 639px) {
+  html:has([data-product-page]),
+  body:has([data-product-page]) {
+    scrollbar-width: none;
+  }
+
+  html:has([data-product-page])::-webkit-scrollbar,
+  body:has([data-product-page])::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ─── Utilitários próprios ────────────────────────────────────────────────── */
+
+@utility nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+.ecosystem-marquee {
+  animation: ecosystem-marquee 24s linear infinite;
+}
+
+.ecosystem-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ecosystem-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-50% - 0.5rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
