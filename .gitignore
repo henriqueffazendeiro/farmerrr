@@ -8,12 +8,10 @@ build
 # env
 .env
 .env*.local
-
 # vercel / typescript
 .vercel
 *.tsbuildinfo
 next-env.d.ts
-
 # Local credentials, logs and design working files
 env.local.template
 *.log

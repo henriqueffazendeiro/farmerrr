@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+out
+build
+.env
+.env.*
+env.local.template
+*.log
+*.tsbuildinfo
+files
+files.zip
+Claude outputs
+Recap de setembro.html
+public/references
