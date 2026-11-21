@@ -72,12 +72,15 @@ export function LeaderboardForm({
     toLocalInput(leaderboard?.starts_at) || toLocalInput(new Date().toISOString()),
   )
   const [endsAt, setEndsAt] = useState(toLocalInput(leaderboard?.ends_at))
+  // Mensal: automático (dia 1 às 00:00 até ao fim do último dia, sem data de fim guardada) ou datas escolhidas pelo streamer.
+  const monthly = leaderboard?.period_mode === 'monthly'
+  const [automatic, setAutomatic] = useState(monthly && !leaderboard?.ends_at)
   const [visibleRewardCount, setVisibleRewardCount] = useState(() => Math.min(MAX_REWARD_POSITIONS, Math.max(3, ...rewards.map(reward => reward.position))))
   const [rewardValues, setRewardValues] = useState(() => REWARD_POSITIONS.map((position) => {
     const reward = rewards.find((item) => item.position === position)
     return { amount: reward?.amount_cents != null ? String(reward.amount_cents / 100) : '', label: reward?.label ?? '' }
   }))
-  const snapshot = JSON.stringify([name, slug, startsAt, endsAt, String(blurRewards), ...rewardValues.flatMap((reward) => [reward.amount, reward.label])])
+  const snapshot = JSON.stringify([name, slug, automatic ? '' : startsAt, automatic ? '' : endsAt, String(blurRewards), ...rewardValues.flatMap((reward) => [reward.amount, reward.label])])
   const [savedSnapshot, setSavedSnapshot] = useState(snapshot)
   const dirty = snapshot !== savedSnapshot || Boolean(imageDraft?.file)
   const [state, formAction] = useActionState<LeaderboardState, FormData>(async (previous, data) => {
@@ -119,8 +122,9 @@ export function LeaderboardForm({
     <form action={formAction} className="space-y-6 [&_label]:text-xs [&_label]:font-normal [&_label]:text-fg-muted">
       {leaderboard ? <input type="hidden" name="id" value={leaderboard.id} /> : null}
       <input type="hidden" name="timezone" value={leaderboard?.timezone ?? timezone} />
-      <input type="hidden" name="startsAt" value={toIso(startsAt)} />
-      <input type="hidden" name="endsAt" value={toIso(endsAt)} />
+      {/* Automático: o início fica como estava (conta para o histórico geral) e não há data de fim. */}
+      <input type="hidden" name="startsAt" value={automatic ? leaderboard?.starts_at ?? '' : toIso(startsAt)} />
+      <input type="hidden" name="endsAt" value={automatic ? '' : toIso(endsAt)} />
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="blurRewards" value={String(blurRewards)} />
 
@@ -145,7 +149,22 @@ export function LeaderboardForm({
         <div>
 
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        {monthly && <>
+          <h2 className="mb-1.5 text-xs text-fg-muted">Datas</h2>
+          <fieldset className="mb-3 flex gap-1 rounded-sm border-0 bg-surface-2 p-1">
+            <legend className="sr-only">Datas da competição</legend>
+            {[{ label: 'Automático', value: true }, { label: 'Personalizado', value: false }].map(option => (
+              <label key={option.label} className={`relative flex h-9 flex-1 cursor-pointer items-center justify-center rounded-xs ${automatic === option.value ? 'bg-surface-3 text-fg!' : 'hover:text-fg!'}`}>
+                <input type="radio" name="dateMode" value={option.value ? 'auto' : 'custom'} checked={automatic === option.value} onChange={() => setAutomatic(option.value)} className="peer sr-only" />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </fieldset>
+        </>}
+        {automatic ? <div className="grid gap-6 sm:grid-cols-2">
+          <Field label="Início" className="[&_input]:border-0 [&_input]:text-fg-muted" name="startsAuto" value="Dia 1, 00:00" readOnly tabIndex={-1} />
+          <Field label="Fim" className="[&_input]:border-0 [&_input]:text-fg-muted" name="endsAuto" value="Último dia, 24:00" readOnly tabIndex={-1} />
+        </div> : <div className="grid gap-6 sm:grid-cols-2">
           <Field
             label="Início"
             className="[&_input]:border-0 [&_input:hover]:bg-surface-3 [&_input:focus]:bg-surface-3"
@@ -162,9 +181,10 @@ export function LeaderboardForm({
             type="datetime-local"
             value={endsAt}
             onChange={(e) => setEndsAt(e.target.value)}
+            required={monthly}
           />
-        </div>
-        <p className="mt-1.5 text-left text-[11px] leading-relaxed text-fg-subtle">Define quando começa e termina a competição mensal.</p>
+        </div>}
+        {!monthly && <p className="mt-1.5 text-left text-[11px] leading-relaxed text-fg-subtle">Define quando começa e termina a competição.</p>}
         </div>
       </section>
 

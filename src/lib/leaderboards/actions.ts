@@ -184,6 +184,10 @@ export async function updateLeaderboardAction(
   // Só o dono: a leitura pública da RLS devolvia a competição a qualquer pessoa.
   const current = await getOwnedLeaderboard(id)
   if (!current) return { error: 'Não foi possível carregar as definições. Atualiza a página e tenta novamente.' }
+  const startsAt = parsed.data.startsAt ?? current.starts_at
+  if (parsed.data.endsAt && Date.parse(parsed.data.endsAt) <= Date.parse(startsAt)) {
+    return { error: 'A data de fim tem de ser depois do início.' }
+  }
   const supportsBlur = Object.prototype.hasOwnProperty.call(current, 'blur_rewards')
   if (!supportsBlur && formData.get('blurRewards') === 'true') {
     return { error: 'Ainda não é possível ocultar as quantias. Seleciona Mostrar quantia para guardar as restantes alterações.' }
