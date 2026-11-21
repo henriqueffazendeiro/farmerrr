@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicEnv } from '@/lib/config/env'
 import { getSubscription, stripe } from '@/lib/billing/stripe'
-import { currentPeriodKey, periodLabel, periodTitle, ALL_TIME } from '@/lib/period'
+import { currentPeriodKey, isPaused, nextMonthlyDates, periodLabel, periodTitle, ALL_TIME } from '@/lib/period'
 import type { Leaderboard, PrizePayment, PrizePayout } from '@/lib/db/types'
 import { closedPeriods, feeFor, netOf, splitPrizes, type DuePrize, type PrizeShare } from './model'
 
@@ -101,21 +101,49 @@ export async function recordManualPayment(board: Board, periodKey: string) {
     participant_id: share.participantId, clipper_profile_id: share.clipperProfileId, transferred_at: now,
   })))
   if (payoutsError) throw payoutsError
-  await restartAfterPrize(board.id)
+  await advanceAfterPrize(board.id)
+}
+
+type DatedBoard = Pick<Leaderboard, 'id' | 'period_mode' | 'timezone' | 'starts_at' | 'ends_at' | 'status' | 'history_starts_at'>
+
+/** Em pausa: falta entregar os prémios do mês que acabou? (false se já foram entregues ou se não há prémios.) */
+async function prizesPending(board: DatedBoard) {
+  const key = currentPeriodKey(board)
+  if (await paidPayment(board.id, key)) return false
+  return (await prizeSplit(board.id, key)).length > 0
 }
 
 /**
- * Prémios entregues numa competição mensal que já tinha passado a data de fim: começa logo a seguinte.
- * A data de fim sai, o contador passa a contar até ao fim do mês e as inscrições e a contagem de views voltam a abrir.
+ * Competição mensal com datas, em pausa: começa a seguinte quando os prémios estão entregues (ou não há prémios) E
+ * já chegou o dia de início seguinte. As datas avançam um mês (os mesmos dias que o streamer escolheu).
+ * Chamado ao abrir a página e logo depois de cada entrega. Devolve true se avançou.
  */
-async function restartAfterPrize(leaderboardId: string | null) {
-  if (!leaderboardId) return
+export async function advanceMonthlyDates(board: DatedBoard, now = Date.now()) {
+  if (!isPaused(board, now) || !board.ends_at) return false
+  const next = nextMonthlyDates({ timezone: board.timezone, starts_at: board.starts_at, ends_at: board.ends_at }, now)
+  if (next.starts.getTime() > now || await prizesPending(board)) return false
   const db = createAdminClient()
-  const { data } = await db.from('leaderboards').update({ ends_at: null }).eq('id', leaderboardId)
-    .eq('period_mode', 'monthly').eq('status', 'active').lte('ends_at', new Date().toISOString()).select('slug')
-  if (!data?.length) return
-  await db.rpc('recompute_leaderboard', { p_leaderboard_id: leaderboardId })
-  try { revalidateTag(`lb:${data[0].slug}`) } catch { /* fora de um pedido (scripts) */ }
+  const { data } = await db.from('leaderboards')
+    .update({ starts_at: next.starts.toISOString(), ends_at: next.ends.toISOString(), history_starts_at: board.history_starts_at ?? board.starts_at })
+    .eq('id', board.id).eq('ends_at', board.ends_at).select('id')
+  if (!data?.length) return false
+  await db.rpc('recompute_leaderboard', { p_leaderboard_id: board.id })
+  return true
+}
+
+/** Para o retângulo da pausa: os prémios do mês que acabou já foram entregues? Há prémios? */
+export async function pauseState(board: DatedBoard) {
+  const key = currentPeriodKey(board)
+  const [paid, split] = await Promise.all([paidPayment(board.id, key), prizeSplit(board.id, key)])
+  return { delivered: !!paid, hasPrizes: split.length > 0 }
+}
+
+async function advanceAfterPrize(leaderboardId: string | null) {
+  if (!leaderboardId) return
+  const { data: board } = await createAdminClient().from('leaderboards').select('*').eq('id', leaderboardId).maybeSingle()
+  if (!board) return
+  await advanceMonthlyDates(board).catch(error => console.error('[monthly dates]', error instanceof Error ? error.message : error))
+  try { revalidateTag(`lb:${board.slug}`) } catch { /* fora de um pedido (scripts) */ }
 }
 
 export async function paidPayment(leaderboardId: string, periodKey: string) {
@@ -198,7 +226,7 @@ export async function settlePrizeCheckout(session: Stripe.Checkout.Session): Pro
   if (error) throw error
   if (updated?.length) {
     await db.from('prize_payouts').update({ status: 'available' }).eq('payment_id', paymentId).eq('status', 'awaiting_payment')
-    await restartAfterPrize(updated[0].leaderboard_id)
+    await advanceAfterPrize(updated[0].leaderboard_id)
   }
   return 'paid'
 }

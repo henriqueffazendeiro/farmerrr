@@ -8,7 +8,7 @@ import type { Live } from '@/components/lives/scale'
 import type { LiveClip } from '@/components/lives/live-clips'
 import { Clock, Eye, Film, Gift, Heart, Settings, Users } from 'lucide-react'
 import type { DuePrize } from '@/lib/prizes/model'
-import { PrizeDueBanner } from '@/components/prizes/prize-due'
+import { PrizeDueBanner, PrizeStatusBanner } from '@/components/prizes/prize-due'
 import type { Creator, Leaderboard, Reward } from '@/lib/db/types'
 import type { ClipperRow } from '@/lib/db/board'
 import { ALL_TIME, periodLabel } from '@/lib/period'
@@ -56,6 +56,10 @@ type Props = {
   clipperSettings?: ReactNode
   /** Abre as definições logo ao carregar (ex.: um aviso do levantamento para o clipper ler). */
   settingsOpen?: boolean
+  /** Competição em pausa (acabou, a seguinte ainda não começou): retângulo no lugar do contador. */
+  pause?: { eyebrow: string; title: string; text: string } | null
+  /** Quando pedir a página de novo ao servidor (o dia em que começa a competição seguinte). */
+  refreshAt?: string | null
 }
 
 function Portrait({ src, name, className = '' }: { src: string | null; name: string; className?: string }) {
@@ -172,7 +176,16 @@ function CompetitionClock({ target, onEnd }: { target: string; onEnd?: () => voi
   </div>
 }
 
-export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings, settingsOpen: openSettingsFirst = false }: Props) {
+export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings, settingsOpen: openSettingsFirst = false, pause, refreshAt }: Props) {
+  const router = useRouter()
+  // Em pausa: no dia em que começa a competição seguinte, pede a página nova ao servidor.
+  useEffect(() => {
+    if (!refreshAt) return
+    const wait = Date.parse(refreshAt) - Date.now() + 1000
+    if (!(wait > 0) || wait > 2_000_000_000) return
+    const timer = setTimeout(() => router.refresh(), wait)
+    return () => clearTimeout(timer)
+  }, [refreshAt, router])
   // O contador que chegou a zero (quando o servidor manda o do mês seguinte, deixa de contar como terminado).
   // clockTarget null: sem contador (competição de data fixa que já acabou).
   const clockFor = clockTarget !== undefined ? clockTarget : lb.ends_at
@@ -195,7 +208,6 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
   const currentPeriod = periods[0]
   // Ordenação e período são lidos do URL no cliente. Como todos os períodos vêm
   // carregados do servidor, trocar de separador é instantâneo (sem pedidos à rede).
-  const router = useRouter()
   const searchParams = useSearchParams()
   const sort: 'views' | 'media' = searchParams.get('ordem') === 'media' ? 'media' : 'views'
   const urlPeriod = searchParams.get('periodo')
@@ -287,6 +299,8 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
       <h1 className={styles.srOnly}>{lb.name} · {name}</h1>
       {isOwner && shownPrize ? <section className={summary.timerSection} aria-label="Entregar prémios">
         <PrizeDueBanner prize={shownPrize} leaderboardId={lb.id} returnTo={`/${lb.slug}`} />
+      </section> : pause ? <section className={summary.timerSection} aria-label="Competição em pausa">
+        <PrizeStatusBanner {...pause} />
       </section> : clockFor && <section className={summary.timerSection} aria-label="Fim da competição">
         <CompetitionClock target={clockFor} onEnd={isOwner ? endClock : undefined} />
       </section>}
@@ -390,6 +404,7 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
       </div>
     </SettingsDrawer>}
     {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)} />}
-    {settingsOpen && <SettingsDrawer onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
+    {/* Depois de "Terminar sessão" já não há definições: o painel fecha sozinho. */}
+    {settingsOpen && (isOwner || isClipper) && <SettingsDrawer onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
   </div>
 }

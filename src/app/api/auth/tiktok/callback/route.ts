@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     const account = await provider.getAccount(tokens)
 
     let participantId: string
+    let firstJoin = false
     if (payload.recap) {
       const admin = createAdminClient()
       const { data: linked } = await admin.from('social_accounts').select('id, clipper_profile_id')
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
     } else {
       const joined = await connectAccountToLeaderboard({ leaderboardId: payload.leaderboardId, provider: 'tiktok', tokens, account })
       participantId = joined.participantId
+      firstJoin = !joined.alreadyMember
     }
 
     // Import runs in the queued worker, avoiding OAuth timeouts and duplicate refreshes.
@@ -55,7 +57,8 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.redirect(payload.recap
       ? `${origin}/${payload.slug}/recap${payload.recapMonth ? `?mes=${payload.recapMonth}` : ''}`
-      : `${origin}/${payload.slug}?entrou=1`)
+      // O pop-up "Inscrição feita" só na primeira vez; quem já participava volta só à página.
+      : `${origin}/${payload.slug}${firstJoin ? '?entrou=1' : ''}`)
     response.cookies.set(CLIPPER_COOKIE, makeClipperSession(participantId), {
       httpOnly: true, sameSite: 'lax', secure: origin.startsWith('https'), path: '/', maxAge: 7 * 86400,
     })

@@ -47,3 +47,30 @@ test('Monthly boards can pay past months only; fixed boards only after they end'
   assert.deepEqual(model.closedPeriods(endedMonthly, ['2026-11', '2026-10'], '2026-11', Date.parse('2026-11-21T16:00:00Z')), ['2026-11', '2026-10']);
   assert.deepEqual(model.closedPeriods(endedMonthly, ['2026-11', '2026-10'], '2026-11', Date.parse('2026-11-21T15:00:00Z')), ['2026-10']);
 });
+
+const period = load('src/lib/period.ts');
+
+test('Monthly dates: the same days repeat next month', () => {
+  const lb = { timezone: 'Europe/London', starts_at: '2026-11-01T13:04:00Z', ends_at: '2026-11-21T15:24:00Z' };
+  const next = period.nextMonthlyDates(lb, Date.parse('2026-11-25T00:00:00Z'));
+  assert.equal(next.starts.toISOString(), '2026-12-01T13:04:00.000Z');
+  assert.equal(next.ends.toISOString(), '2026-12-21T15:24:00.000Z');
+  // Entregue muito tarde (já passou o fim do mês seguinte): salta para o primeiro mês com o fim no futuro.
+  assert.equal(period.nextMonthlyDates(lb, Date.parse('2026-12-25T00:00:00Z')).ends.toISOString(), '2027-01-21T15:24:00.000Z');
+  // 31 jan → 28 fev; a hora local mantém-se com a mudança de hora.
+  assert.equal(period.addMonthsLocal(new Date('2027-01-31T10:00:00Z'), 1, 'Europe/London').toISOString(), '2027-02-28T10:00:00.000Z');
+  assert.equal(period.addMonthsLocal(new Date('2027-03-21T10:00:00Z'), 1, 'Europe/Lisbon').toISOString(), '2027-04-21T09:00:00.000Z');
+});
+
+test('Monthly dates: key, bounds, countdown and pause', () => {
+  const lb = { period_mode: 'monthly', timezone: 'Europe/London', status: 'active', starts_at: '2026-12-01T13:04:00Z', ends_at: '2026-12-21T15:24:00Z' };
+  assert.equal(period.currentPeriodKey(lb), '2026-12');
+  assert.deepEqual(period.periodBounds(lb, '2026-12'), { from: new Date('2026-12-01T13:04:00Z'), to: new Date('2026-12-21T15:24:00Z') });
+  assert.equal(period.currentPeriodEnd(lb, Date.parse('2026-11-25T00:00:00Z')), '2026-12-01T13:04:00.000Z'); // ainda não começou
+  assert.equal(period.currentPeriodEnd(lb, Date.parse('2026-12-10T00:00:00Z')), '2026-12-21T15:24:00.000Z'); // a decorrer
+  assert.equal(period.currentPeriodEnd(lb, Date.parse('2026-12-22T00:00:00Z')), null); // em pausa
+  assert.equal(period.isPaused(lb, Date.parse('2026-12-22T00:00:00Z')), true);
+  assert.equal(period.isPaused({ ...lb, status: 'ended' }, Date.parse('2026-12-22T00:00:00Z')), false);
+  // Sem data de fim: meses do calendário, como antes.
+  assert.equal(period.isPaused({ ...lb, ends_at: null }, Date.parse('2026-12-22T00:00:00Z')), false);
+});

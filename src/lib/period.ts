@@ -4,12 +4,18 @@ export const ALL_TIME = 'all'
 // Separate from SQL's legacy 'all', which represents competition dates.
 export const HISTORY_PERIOD = 'history'
 
-type PeriodSource = { period_mode: PeriodMode; timezone: string }
+type PeriodSource = { period_mode: PeriodMode; timezone: string; ends_at?: string | null }
+
+/**
+ * Mensal com datas definidas pelo streamer (ex.: do dia 1 ao dia 21): o ranking conta só esse intervalo, depois
+ * fica em pausa e as datas avançam um mês (ver migração 0020). Sem data de fim: meses do calendário.
+ */
+export const hasMonthlyDates = (lb: PeriodSource) => lb.period_mode === 'monthly' && !!lb.ends_at
 
 /**
  * Chave do período corrente. Tem de dar o mesmo resultado que
- * `public.period_key_for` no Postgres — daí usar o fuso do leaderboard e não
- * o do servidor.
+ * `public.current_period_key` no Postgres — daí usar o fuso do leaderboard e não
+ * o do servidor. Com datas definidas, é o mês em que a competição acaba.
  */
 export function currentPeriodKey(lb: PeriodSource): string {
   if (lb.period_mode !== 'monthly') return ALL_TIME
@@ -18,7 +24,7 @@ export function currentPeriodKey(lb: PeriodSource): string {
     timeZone: lb.timezone || 'Europe/Lisbon',
     year: 'numeric',
     month: '2-digit',
-  }).formatToParts(new Date())
+  }).formatToParts(hasMonthlyDates(lb) ? new Date(Date.parse(lb.ends_at!) - 1) : new Date())
 
   const year = parts.find((p) => p.type === 'year')?.value ?? '1970'
   const month = parts.find((p) => p.type === 'month')?.value ?? '01'
@@ -97,6 +103,7 @@ export function periodBounds(
   lb: { period_mode: PeriodMode; timezone: string; starts_at: string; ends_at: string | null },
   periodKey: string,
 ): { from: Date; to: Date } {
+  if (hasMonthlyDates(lb) && periodKey === currentPeriodKey(lb)) return { from: new Date(lb.starts_at), to: new Date(lb.ends_at!) }
   const competitionFrom = new Date(lb.starts_at)
   const competitionTo = lb.ends_at ? new Date(lb.ends_at) : new Date()
 
@@ -114,23 +121,52 @@ export function periodBounds(
   }
 }
 
+/** O mesmo dia e hora (no fuso da competição) `months` meses depois. 31 jan + 1 = 28/29 fev. */
+export function addMonthsLocal(at: Date, months: number, timeZone: string): Date {
+  const zone = timeZone || 'Europe/Lisbon'
+  const local = new Date(at.getTime() + timezoneOffsetMs(at, zone))
+  const year = local.getUTCFullYear(), month = local.getUTCMonth() + months
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  const guess = Date.UTC(year, month, Math.min(local.getUTCDate(), lastDay),
+    local.getUTCHours(), local.getUTCMinutes(), local.getUTCSeconds(), local.getUTCMilliseconds())
+  return new Date(guess - timezoneOffsetMs(new Date(guess), zone))
+}
+
 /**
- * Quando acaba a corrida atual (para o contador): o fim do mês nas competições mensais,
- * ou a data de fim, se for antes. Uma data de fim que já passou não conta: nas mensais o contador
- * passa logo para o fim do mês; nas de data fixa (ou terminadas) não há contador (null).
+ * As datas da competição seguinte: os mesmos dias, um mês depois (ou mais, se o fim desse mês também já passou).
+ */
+export function nextMonthlyDates(lb: { timezone: string; starts_at: string; ends_at: string }, now = Date.now()) {
+  for (let months = 1; months < 1200; months++) {
+    const ends = addMonthsLocal(new Date(lb.ends_at), months, lb.timezone)
+    if (ends.getTime() > now) return { starts: addMonthsLocal(new Date(lb.starts_at), months, lb.timezone), ends }
+  }
+  return { starts: new Date(lb.starts_at), ends: new Date(lb.ends_at) }
+}
+
+/** Mensal com datas cujo fim já passou: em pausa até à entrega dos prémios e ao dia de início seguinte. */
+export function isPaused(lb: PeriodSource & { status?: string }, now = Date.now()) {
+  return hasMonthlyDates(lb) && (!lb.status || lb.status === 'active') && Date.parse(lb.ends_at!) <= now
+}
+
+/**
+ * Até onde conta o contador. Mensal com datas: até ao fim (ou até ao início, se ainda não começou); em pausa não há
+ * contador (null: aparece o retângulo dos prémios). Mensal sem datas: o fim do mês. Data fixa: o fim, enquanto não passar.
  */
 export function currentPeriodEnd(
-  lb: { period_mode: PeriodMode; timezone: string; ends_at: string | null; status?: string },
+  lb: { period_mode: PeriodMode; timezone: string; starts_at?: string; ends_at: string | null; status?: string },
   now = Date.now(),
 ): string | null {
   if (lb.status && lb.status !== 'active') return null
+  if (hasMonthlyDates(lb)) {
+    if (isPaused(lb, now)) return null
+    return lb.starts_at && Date.parse(lb.starts_at) > now ? new Date(lb.starts_at).toISOString() : new Date(lb.ends_at!).toISOString()
+  }
   const end = lb.ends_at && new Date(lb.ends_at).getTime() > now ? new Date(lb.ends_at) : null
   if (lb.period_mode !== 'monthly') return end?.toISOString() ?? null
-  const next = monthStart(addMonth(currentPeriodKey(lb)), lb.timezone || 'Europe/Lisbon')
-  return (end && end < next ? end : next).toISOString()
+  return monthStart(addMonth(currentPeriodKey(lb)), lb.timezone || 'Europe/Lisbon').toISOString()
 }
 
 /** Os períodos que fazem sentido oferecer nos separadores da página pública. */
-export function availablePeriods(lb: { period_mode: PeriodMode; timezone: string }): string[] {
+export function availablePeriods(lb: PeriodSource): string[] {
   return lb.period_mode === 'monthly' ? [currentPeriodKey(lb), ALL_TIME] : [ALL_TIME]
 }

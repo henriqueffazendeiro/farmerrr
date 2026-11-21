@@ -14,6 +14,8 @@
 .prizeDueTitle { color: var(--color-fg); font-size: 36px; line-height: 1.15; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; transition: color 150ms; }
 .prizeDueText { color: var(--color-fg-muted); font-size: 15px; line-height: 1.5; }
 .prizeDue:hover .prizeDueTitle { color: #d4d4d8; }
+.prizeDueStatic { cursor: default; }
+.prizeDueStatic:hover .prizeDueTitle { color: var(--color-fg); }
 .prizeDue:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: var(--radius-ui); }
 @media (max-width: 767px) {
   .prizeDue { padding: 32px 0; }

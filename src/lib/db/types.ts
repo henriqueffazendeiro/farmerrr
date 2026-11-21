@@ -53,6 +53,8 @@ export type Leaderboard = {
   cover_url: string | null
   starts_at: string
   ends_at: string | null
+  /** Primeiro início da competição (as datas das mensais avançam todos os meses; o histórico geral começa aqui). */
+  history_starts_at?: string | null
   event_at: string | null
   timezone: string
   status: LeaderboardStatus

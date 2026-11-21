@@ -79,6 +79,18 @@ function DeliveryOptions({ prize, leaderboardId, returnTo }: { prize: DuePrize; 
   </div>
 }
 
+/** A competição está em pausa (todos menos o dono com prémios por entregar): o mesmo retângulo, sem clique. */
+export function PrizeStatusBanner({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
+  return <div className={`${summary.prizeDue} ${summary.prizeDueStatic}`} role="status">
+    <Hyperspace className={summary.prizeDueSpace} starCount={260} />
+    <span className={summary.prizeDueCopy}>
+      <span className={summary.prizeDueEyebrow}>{eyebrow}</span>
+      <span className={summary.prizeDueTitle}>{title}</span>
+      <span className={summary.prizeDueText}>{text}</span>
+    </span>
+  </div>
+}
+
 /**
  * O mês acabou e os prémios ainda não foram entregues (só o dono vê). O retângulo inteiro é clicável e abre o painel
  * com as duas opções. Mesmo estilo do "Pronto para começar?" da página inicial (estrelas, sem caixa, texto ao centro).

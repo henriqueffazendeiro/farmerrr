@@ -3,7 +3,8 @@ import type { Metadata } from 'next'
 import { StreamerLeaderboard } from '@/components/leaderboard/streamer-leaderboard'
 import { getClippers, getCreatorOf, getLeaderboardBySlug, getLeaderboardTotals, getRewards, getVideos, isDemoLeaderboard } from '@/lib/leaderboards/public-data'
 import { liveDateFromCaption, type LiveClip } from '@/components/lives/live-clips'
-import { ALL_TIME, availablePeriods, currentPeriodEnd } from '@/lib/period'
+import { ALL_TIME, availablePeriods, currentPeriodEnd, currentPeriodKey, isPaused, nextMonthlyDates, periodLabel } from '@/lib/period'
+import { getLeaderboardBySlug as loadLeaderboard } from '@/lib/db/board'
 import { getCreatorLives } from '@/lib/streams/data'
 import { getCurrentUser } from '@/lib/supabase/server'
 import { SettingsContent } from '@/components/dashboard/settings-content'
@@ -11,7 +12,7 @@ import { joinFormProps } from '@/components/leaderboard/join-content'
 import { PageReady } from '@/components/dashboard/page-ready'
 import { creatorHasAccess } from '@/lib/billing/stripe'
 import { OwnerPausedOverlay, PausedPage } from '@/components/billing/paused'
-import { duePrize, upcomingPrize } from '@/lib/prizes/payments'
+import { advanceMonthlyDates, duePrize, pauseState, upcomingPrize } from '@/lib/prizes/payments'
 import { ClipperSettingsView, clipperSettingsData } from '@/components/clipper/clipper-settings'
 import { prizeNotices } from '@/components/prizes/clipper-prizes'
 import { money } from '@/lib/format'
@@ -34,8 +35,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicLeaderboardPage({ params, searchParams }: Props) {
   const { slug } = await params
   const { periodo, ordem, criada, entrou, premios, valor } = await searchParams
-  const leaderboard = await getLeaderboardBySlug(slug)
-  if (!leaderboard) notFound()
+  const found = await getLeaderboardBySlug(slug)
+  if (!found) notFound()
+  // Mensal com datas: se a competição seguinte já pode começar (prémios entregues e chegou o dia), as datas avançam agora.
+  const advanced = !isDemoLeaderboard(found.id) && await advanceMonthlyDates(found)
+    .catch(error => { console.error('[monthly dates]', error instanceof Error ? error.message : error); return false })
+  const leaderboard = (advanced && await loadLeaderboard(slug)) || found
   const periods = availablePeriods(leaderboard)
   const periodKey = ordem !== 'media' && periodo && periods.includes(periodo) ? periodo : periods[0]
   const demo = isDemoLeaderboard(leaderboard.id)
@@ -69,12 +74,25 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
       return { wall: all.filter(video => wall.has(video.id)), all }
     })
   const accessPromise = demo ? Promise.resolve(true) : creatorHasAccess(leaderboard.creator_id)
-  const [creator, datasets, rewards, baseLives, settingsContent, videos, access, [prizeDue, prizeNext], clipperData] = await Promise.all([
+  // Em pausa (acabou e ainda não começou a seguinte): o que mostrar no lugar do contador.
+  const pausePromise = !demo && isPaused(leaderboard) ? pauseState(leaderboard)
+    .catch(error => { console.error('[pause]', error instanceof Error ? error.message : error); return { delivered: false, hasPrizes: true } }) : Promise.resolve(null)
+  const [creator, datasets, rewards, baseLives, settingsContent, videos, access, [prizeDue, prizeNext], clipperData, pause] = await Promise.all([
     creatorPromise, datasetsPromise, getRewards(leaderboard),
     demo ? Promise.resolve([]) : getCreatorLives(leaderboard.creator_id, leaderboard.timezone),
-    settingsPromise, videosPromise, accessPromise, prizePromise, clipperPromise,
+    settingsPromise, videosPromise, accessPromise, prizePromise, clipperPromise, pausePromise,
   ])
   const isOwner = settingsContent !== undefined
+  const nextDates = pause && leaderboard.ends_at ? nextMonthlyDates({ timezone: leaderboard.timezone, starts_at: leaderboard.starts_at, ends_at: leaderboard.ends_at }) : null
+  const nextStart = nextDates && nextDates.starts.getTime() > Date.now() ? nextDates.starts : null
+  const waitingForPrizes = !!pause && pause.hasPrizes && !pause.delivered
+  const pauseBanner = pause ? {
+    eyebrow: `${periodLabel(currentPeriodKey(leaderboard))} terminou`,
+    title: !pause.hasPrizes ? 'Competição em pausa' : isOwner && pause.delivered ? 'Prémios entregues' : 'A decorrer entrega de prémios',
+    text: waitingForPrizes ? 'A próxima competição começa depois da entrega dos prémios.'
+      : nextStart ? `A próxima competição começa a ${new Intl.DateTimeFormat('pt-PT', { day: 'numeric', month: 'long', timeZone: leaderboard.timezone || 'Europe/Lisbon' }).format(nextStart)}.`
+      : 'A próxima competição está a começar.',
+  } : null
   // Sem subscrição ativa: os visitantes veem "em pausa"; o dono vê a página com um aviso.
   if (!access && !isOwner) return <PausedPage name={leaderboard.name} />
   const { clippers, totals } = datasets[periodKey]
@@ -107,6 +125,7 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
   const clipperNotice = clipperData && premios && premios !== 'enviado' && prizeNotices[premios] ? premios : undefined
   return <>{!access && <OwnerPausedOverlay slug={leaderboard.slug} />}<StreamerLeaderboard leaderboard={leaderboard} creator={creator} datasets={datasets} join={joinFormProps(leaderboard)}
     isOwner={isOwner} settingsContent={settingsContent} prizeDue={prizeDue} prizeNext={prizeNext} clockTarget={currentPeriodEnd(leaderboard)}
+    pause={pauseBanner} refreshAt={nextStart && !waitingForPrizes ? nextStart.toISOString() : null}
     clipperSettings={clipperData ? <ClipperSettingsView data={clipperData} premios={clipperNotice} /> : undefined}
     settingsOpen={clipperNotice != null}
     clippers={clippers} totals={totals} rewards={rewards}
