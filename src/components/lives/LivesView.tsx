@@ -222,7 +222,7 @@ export function LivesView({ demo, initialLives = [], timezone = 'Europe/Lisbon',
         </div>
       </div>
     </div>
-    <LiveClips live={live} lives={lives} month={month} clips={demo ? undefined : clips} />
+    <LiveClips live={live} lives={lives} month={month} today={today} clips={demo ? undefined : clips} />
     <GridTooltip tooltip={tooltip} />
   </section>
 }

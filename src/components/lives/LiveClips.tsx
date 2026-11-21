@@ -27,7 +27,17 @@ function ClipPreview({ clip, onClose }: { clip: LiveClip; onClose: () => void })
   </dialog>
 }
 
-type Period = 'live' | 'month' | 'all'
+type Period = 'live' | 'week' | 'month' | 'all'
+
+/** Semana (segunda a domingo) que contém `date` (AAAA-MM-DD), como datas AAAA-MM-DD. */
+function weekRange(date: string): [string, string] {
+  const day = new Date(`${date}T00:00:00Z`)
+  const monday = new Date(day)
+  monday.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7))
+  const sunday = new Date(monday)
+  sunday.setUTCDate(monday.getUTCDate() + 6)
+  return [monday.toISOString().slice(0, 10), sunday.toISOString().slice(0, 10)]
+}
 
 /**
  * Mural dos clips. `tracked` são os clips reais dos clippers (vídeos do ranking);
@@ -64,25 +74,30 @@ function useTwoRows(resetKey: string) {
   return { box, height, atEnd, onScroll }
 }
 
-export function LiveClips({ live, lives, month, clips: tracked }: { live?: Live; lives: Live[]; month: string; clips?: LiveClip[] }) {
+export function LiveClips({ live, lives, month, today, clips: tracked }: { live?: Live; lives: Live[]; month: string; today: string; clips?: LiveClip[] }) {
   const [selectedClip, setSelectedClip] = useState<LiveClip | null>(null)
   const [chosen, setChosen] = useState<Period | null>(null)
   const byViews = (a: LiveClip, b: LiveClip) => b.views - a.views || a.id.localeCompare(b.id)
+  // A semana é a da live mostrada (ou a atual, se não houver live).
+  const [weekStart, weekEnd] = weekRange(live?.date ?? today)
+  const inPeriod = (date: string, value: Period) => value === 'all' ? true
+    : value === 'week' ? date.slice(0, 10) >= weekStart && date.slice(0, 10) <= weekEnd
+    : date.startsWith(month)
   const clipsFor = (value: Period): LiveClip[] => value === 'live' ? (live ? topClipsForLive(live.clips ?? [], live.date, Infinity) : [])
-    : tracked ? tracked.filter(clip => value === 'all' || clip.publishedAt.startsWith(month)).sort(byViews)
-    : lives.filter(item => value === 'all' || item.date.startsWith(month)).flatMap(item => item.clips ?? []).sort(byViews)
+    : tracked ? tracked.filter(clip => inPeriod(clip.publishedAt, value)).sort(byViews)
+    : lives.filter(item => inPeriod(item.date, value)).flatMap(item => item.clips ?? []).sort(byViews)
   // Até o visitante escolher, abre no primeiro separador que tenha clips.
-  const period: Period = chosen ?? (['live', 'month', 'all'] as const).find(value => clipsFor(value).length > 0) ?? 'live'
+  const period: Period = chosen ?? (['live', 'week', 'month', 'all'] as const).find(value => clipsFor(value).length > 0) ?? 'live'
   const setPeriod = (value: Period) => setChosen(value)
-  const selectionKey = `${period}:${month}:${live?.date ?? ''}`
+  const selectionKey = `${period}:${month}:${weekStart}:${live?.date ?? ''}`
   const clips = clipsFor(period)
   const playableClips = clips.filter(clip => clip.url || clip.providerVideoId)
   const selectedIndex = selectedClip ? playableClips.findIndex(clip => clip.id === selectedClip.id) : -1
   const rows = useTwoRows(`${selectionKey}:${clips.length}`)
-  const labels = { live: 'desta live', month: 'deste mês', all: 'de sempre' }
+  const labels = { live: 'desta live', week: 'desta semana', month: 'deste mês', all: 'de sempre' }
   return <section className={styles.panel} aria-label={`Clips mais vistos ${labels[period]}`} data-live-date={live?.date} data-period={period}>
     <div className={styles.filters} role="group" aria-label="Período dos clips">
-      {([{ value: 'live', label: 'Esta live' }, { value: 'month', label: 'Este mês' }, { value: 'all', label: 'De sempre' }] as const).map(item =>
+      {([{ value: 'live', label: 'Esta live' }, { value: 'week', label: 'Esta semana' }, { value: 'month', label: 'Este mês' }, { value: 'all', label: 'De sempre' }] as const).map(item =>
         <button type="button" key={item.value} aria-pressed={period === item.value} onClick={() => setPeriod(item.value)}>{item.label}</button>)}
     </div>
     {clips.length ? <div ref={rows.box} className={styles.scroller} data-at-end={rows.atEnd} onScroll={rows.onScroll} style={{ maxHeight: rows.height }}><div className={styles.grid}>

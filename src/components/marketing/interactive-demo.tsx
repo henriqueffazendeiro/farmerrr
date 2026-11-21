@@ -16,7 +16,7 @@ const annotationFont = localFont({
 export function InteractiveDemo() {
   const href = `/${DEMO_SLUG}`
   const [showRecap, setShowRecap] = useState(false)
-  const activeHref = showRecap ? '/demos/recap.html' : href
+  const activeHref = showRecap ? '/recap.html' : href
   const frame = useRef<HTMLDivElement>(null)
   const preview = useRef<HTMLIFrameElement>(null)
   const [expanded, setExpanded] = useState(false)
@@ -27,6 +27,15 @@ export function InteractiveDemo() {
     document.addEventListener('fullscreenchange', update)
     return () => document.removeEventListener('fullscreenchange', update)
   }, [fallbackExpanded])
+
+  // O recap (em desenvolvimento) pede para voltar ao ranking quando alguém clica nele.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin === window.location.origin && event.data?.type === 'recap:close') setShowRecap(false)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
 
   useEffect(() => {
     if (!fallbackExpanded) return
@@ -133,8 +142,15 @@ export function InteractiveDemo() {
           <svg aria-hidden="true" viewBox="0 0 40 48" fill="none" className="absolute -top-6 -right-9 h-10 w-8 -scale-x-100 text-fg-muted">
             <path d="M32 42C8 40 5 20 24 7M13 8l13-4-1 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="text-fg">Experimenta ✨</span>
-          <span className="block text-xs">(recap mensal)</span>
+          <button
+            type="button"
+            onClick={() => { setShowRecap(true); frame.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }}
+            aria-label="Ver o recap mensal"
+            className="cursor-pointer text-center hover:opacity-80"
+          >
+            <span className="text-fg underline-offset-4 hover:underline">Experimenta ✨</span>
+            <span className="block text-xs">(recap mensal)</span>
+          </button>
         </div>
       </Container>
     </section>
