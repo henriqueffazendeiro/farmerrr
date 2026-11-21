@@ -46,7 +46,20 @@ export async function prizeSplit(leaderboardId: string, periodKey: string): Prom
 export async function duePrize(board: Board): Promise<DuePrize | null> {
   if (!prizesConfigured()) return null
   const [periodKey] = await payablePeriods(board)
-  if (!periodKey || await paidPayment(board.id, periodKey)) return null
+  return periodKey ? prizeFor(board, periodKey) : null
+}
+
+/**
+ * Os prémios do período que está a decorrer, pelo ranking atual. A página mostra logo o "Entregar prémios"
+ * quando o contador chega a zero, sem esperar pelo servidor; depois o refresh traz os valores finais.
+ */
+export async function upcomingPrize(board: Board): Promise<DuePrize | null> {
+  if (!prizesConfigured()) return null
+  return prizeFor(board, currentPeriodKey(board))
+}
+
+async function prizeFor(board: Board, periodKey: string): Promise<DuePrize | null> {
+  if (await paidPayment(board.id, periodKey)) return null
   const split = await prizeSplit(board.id, periodKey)
   if (!split.length) return null
   const ids = split.map(share => share.clipperProfileId)

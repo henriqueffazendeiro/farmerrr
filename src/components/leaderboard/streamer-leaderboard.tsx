@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useLayoutEffect, useOptimistic, useRef, useState, useTransition, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useOptimistic, useRef, useState, useTransition, type MouseEvent, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LivesView } from '@/components/lives/LivesView'
@@ -48,6 +48,8 @@ type Props = {
   clips?: LiveClip[]
   /** Só para o dono: prémios do mês que acabou, por entregar. Ocupa o lugar do contador até serem pagos. */
   prizeDue?: DuePrize | null
+  /** Prémios do período a decorrer: aparecem no lugar do contador assim que ele chega a zero. */
+  prizeNext?: DuePrize | null
   /** Fim da corrida atual (fim do mês nas competições mensais). */
   clockTarget?: string | null
   /** Clipper que já participa nesta competição: as definições dele (no lugar do "Participar"). */
@@ -135,7 +137,7 @@ function useRankingFlip(order: string) {
   return body
 }
 
-function CompetitionClock({ target }: { target: string }) {
+function CompetitionClock({ target, onEnd }: { target: string; onEnd?: () => void }) {
   const [remaining, setRemaining] = useState<number | null>(null)
   const router = useRouter()
   const wasRunning = useRef(false)
@@ -151,9 +153,10 @@ function CompetitionClock({ target }: { target: string }) {
     if (remaining > 0) { wasRunning.current = true; return }
     if (!wasRunning.current) return
     wasRunning.current = false
+    onEnd?.()
     const timer = setTimeout(() => router.refresh(), 1500)
     return () => clearTimeout(timer)
-  }, [remaining, router])
+  }, [remaining, router, onEnd])
   const seconds = Math.floor((remaining ?? 0) / 1000)
   const values = [Math.floor(seconds / 86400), Math.floor(seconds / 3600) % 24, Math.floor(seconds / 60) % 60, seconds % 60]
   return <div className={summary.countdown}>
@@ -166,7 +169,12 @@ function CompetitionClock({ target }: { target: string }) {
   </div>
 }
 
-export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, clockTarget, clipperSettings }: Props) {
+export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings }: Props) {
+  // O contador que chegou a zero (quando o servidor manda o do mês seguinte, deixa de contar como terminado).
+  const clockFor = clockTarget ?? lb.ends_at
+  const [endedClock, setEndedClock] = useState<string | null>(null)
+  const endClock = useCallback(() => setEndedClock(clockFor), [clockFor])
+  const shownPrize = prizeDue ?? (endedClock != null && endedClock === clockFor ? prizeNext : null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [selectedClipper, setSelectedClipper] = useState<ClipperRow | null>(null)
@@ -266,10 +274,10 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
 
     <main className={styles.main}>
       <h1 className={styles.srOnly}>{lb.name} · {name}</h1>
-      {isOwner && prizeDue ? <section className={summary.timerSection} aria-label="Entregar prémios">
-        <PrizeDueBanner prize={prizeDue} leaderboardId={lb.id} returnTo={`/${lb.slug}`} />
+      {isOwner && shownPrize ? <section className={summary.timerSection} aria-label="Entregar prémios">
+        <PrizeDueBanner prize={shownPrize} leaderboardId={lb.id} returnTo={`/${lb.slug}`} />
       </section> : (clockTarget ?? lb.ends_at) && <section className={summary.timerSection} aria-label="Fim da competição">
-        <CompetitionClock target={(clockTarget ?? lb.ends_at)!} />
+        <CompetitionClock target={(clockTarget ?? lb.ends_at)!} onEnd={isOwner ? endClock : undefined} />
       </section>}
 
       <section className={summary.stats} aria-label="Estatísticas da competição">
