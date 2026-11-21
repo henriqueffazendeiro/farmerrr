@@ -69,6 +69,7 @@ export type ClipperProfile = {
   id: string
   display_name: string
   avatar_url: string | null
+  discord?: string | null
   created_at: string
   updated_at: string
 }
@@ -221,6 +222,52 @@ export type Subscription = {
   updated_at: string
 }
 
+export type ClipperPayoutAccount = {
+  clipper_profile_id: string
+  stripe_account_id: string
+  transfers_enabled: boolean
+  details_submitted: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type PrizePaymentStatus = 'pending' | 'paid' | 'refunded' | 'expired'
+export type PrizePayment = {
+  id: string
+  leaderboard_id: string | null
+  period_key: string
+  prizes_cents: number
+  fee_cents: number
+  currency: string
+  status: PrizePaymentStatus
+  method: 'stripe' | 'manual'
+  stripe_checkout_session_id: string | null
+  stripe_payment_intent_id: string | null
+  stripe_charge_id: string | null
+  paid_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type PrizePayoutStatus = 'awaiting_payment' | 'available' | 'transferring' | 'paid' | 'canceled'
+export type PrizePayout = {
+  id: string
+  payment_id: string
+  clipper_profile_id: string | null
+  participant_id: string | null
+  position: number
+  /** Líquido: o que o clipper recebe (prémio − taxa). */
+  amount_cents: number
+  fee_cents: number
+  currency: string
+  status: PrizePayoutStatus
+  stripe_transfer_id: string | null
+  last_error: string | null
+  transferred_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type SyncJob = {
   id: string
   social_account_id: string
@@ -268,6 +315,9 @@ export type Database = {
       >
       rewards: Table<Reward, 'leaderboard_id' | 'position'>
       subscriptions: Table<Subscription, 'profile_id'>
+      clipper_payout_accounts: Table<ClipperPayoutAccount, 'clipper_profile_id' | 'stripe_account_id'>
+      prize_payments: Table<PrizePayment, 'period_key' | 'prizes_cents' | 'fee_cents'>
+      prize_payouts: Table<PrizePayout, 'payment_id' | 'position' | 'amount_cents'>
       sync_jobs: Table<SyncJob, 'social_account_id' | 'kind'>
       reserved_slugs: Table<{ slug: string }, 'slug'>
     }

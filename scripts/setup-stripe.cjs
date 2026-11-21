@@ -22,7 +22,11 @@ if (!appUrl.startsWith('https://')) { console.error('O webhook precisa de um end
 
 const stripe = new Stripe(key, { apiVersion: '2025-02-24.acacia' });
 const EVENTS = ['checkout.session.completed', 'customer.subscription.created', 'customer.subscription.updated',
-  'customer.subscription.deleted', 'customer.subscription.trial_will_end', 'invoice.paid', 'invoice.payment_failed'];
+  'customer.subscription.deleted', 'customer.subscription.trial_will_end', 'invoice.paid', 'invoice.payment_failed',
+  // Prémios dos clippers
+  'checkout.session.async_payment_succeeded', 'checkout.session.async_payment_failed', 'checkout.session.expired', 'charge.refunded'];
+// Contas Stripe Express dos clippers (eventos das contas ligadas: webhook "Connect").
+const CONNECT_EVENTS = ['account.updated'];
 
 async function price(product, lookupKey, amount, interval) {
   const existing = (await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 })).data[0];
@@ -89,9 +93,18 @@ function writeEnv(values) {
     if (endpoint.url === url) await stripe.webhookEndpoints.del(endpoint.id);
   }
   const webhook = await stripe.webhookEndpoints.create({ url, enabled_events: EVENTS, api_version: '2025-02-24.acacia',
-    description: 'farmerrr — estado das subscrições' });
+    description: 'farmerrr — subscrições e prémios' });
   console.log(`Webhook criado: ${url}`);
+  // Precisa do Connect ativo na conta (dashboard do Stripe → Connect). Sem ele, os prémios ficam desligados mas o resto funciona.
+  let connectSecret = '';
+  try {
+    const connect = await stripe.webhookEndpoints.create({ url, enabled_events: CONNECT_EVENTS, connect: true, api_version: '2025-02-24.acacia',
+      description: 'farmerrr — contas dos clippers' });
+    connectSecret = connect.secret;
+    console.log('Webhook Connect criado.');
+  } catch (error) { console.warn(`Webhook Connect não criado (ativa o Connect no dashboard do Stripe): ${error.message}`); }
 
-  writeEnv({ STRIPE_PRICE_MONTHLY: monthly.id, STRIPE_PRICE_YEARLY: yearly.id, STRIPE_WEBHOOK_SECRET: webhook.secret });
-  console.log('Escrito no .env.local: STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY, STRIPE_WEBHOOK_SECRET.');
+  writeEnv({ STRIPE_PRICE_MONTHLY: monthly.id, STRIPE_PRICE_YEARLY: yearly.id, STRIPE_WEBHOOK_SECRET: webhook.secret,
+    ...(connectSecret ? { STRIPE_CONNECT_WEBHOOK_SECRET: connectSecret } : {}) });
+  console.log('Escrito no .env.local: STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY, STRIPE_WEBHOOK_SECRET' + (connectSecret ? ', STRIPE_CONNECT_WEBHOOK_SECRET.' : '.'));
 })().catch(error => { console.error('Falhou:', error.message); process.exit(1); });

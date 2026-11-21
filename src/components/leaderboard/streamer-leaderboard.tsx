@@ -7,6 +7,8 @@ import { LivesView } from '@/components/lives/LivesView'
 import type { Live } from '@/components/lives/scale'
 import type { LiveClip } from '@/components/lives/live-clips'
 import { Clock, Eye, Film, Gift, Heart, Settings, Users } from 'lucide-react'
+import type { DuePrize } from '@/lib/prizes/model'
+import { PrizeDueBanner } from '@/components/prizes/prize-due'
 import type { Creator, Leaderboard, Reward } from '@/lib/db/types'
 import type { ClipperRow } from '@/lib/db/board'
 import { ALL_TIME, periodLabel } from '@/lib/period'
@@ -44,6 +46,12 @@ type Props = {
   lives?: Live[]
   /** Clips reais dos clippers, para o mural por baixo do Absolute Cinema. */
   clips?: LiveClip[]
+  /** Só para o dono: prémios do mês que acabou, por entregar. Ocupa o lugar do contador até serem pagos. */
+  prizeDue?: DuePrize | null
+  /** Fim da corrida atual (fim do mês nas competições mensais). */
+  clockTarget?: string | null
+  /** Clipper que já participa nesta competição: as definições dele (no lugar do "Participar"). */
+  clipperSettings?: ReactNode
 }
 
 function Portrait({ src, name, className = '' }: { src: string | null; name: string; className?: string }) {
@@ -129,12 +137,23 @@ function useRankingFlip(order: string) {
 
 function CompetitionClock({ target }: { target: string }) {
   const [remaining, setRemaining] = useState<number | null>(null)
+  const router = useRouter()
+  const wasRunning = useRef(false)
   useEffect(() => {
     const update = () => setRemaining(Math.max(0, new Date(target).getTime() - Date.now()))
     update()
     const timer = setInterval(update, 1000)
     return () => clearInterval(timer)
   }, [target])
+  // Chegou a zero com a página aberta: pede ao servidor o estado novo (o "Entregar prémios" e o contador do mês seguinte).
+  useEffect(() => {
+    if (remaining === null) return
+    if (remaining > 0) { wasRunning.current = true; return }
+    if (!wasRunning.current) return
+    wasRunning.current = false
+    const timer = setTimeout(() => router.refresh(), 1500)
+    return () => clearTimeout(timer)
+  }, [remaining, router])
   const seconds = Math.floor((remaining ?? 0) / 1000)
   const values = [Math.floor(seconds / 86400), Math.floor(seconds / 3600) % 24, Math.floor(seconds / 60) % 60, seconds % 60]
   return <div className={summary.countdown}>
@@ -147,7 +166,7 @@ function CompetitionClock({ target }: { target: string }) {
   </div>
 }
 
-export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [] }: Props) {
+export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, clockTarget, clipperSettings }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [selectedClipper, setSelectedClipper] = useState<ClipperRow | null>(null)
@@ -209,6 +228,9 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
   }
 
   const joinHref = `/api/auth/tiktok/start?lb=${encodeURIComponent(lb.slug)}`
+  // Quem já participa (ou é o dono) não vê "Participar": vê as suas definições.
+  const isClipper = !isOwner && clipperSettings != null
+  const canJoin = isActive && !isOwner && !isClipper
   const prefetchClipper = (row: ClipperRow) => () => { loadClipperDetails(lb.slug, row.participantId, periodKey).catch(() => {}) }
 
   return <div className={styles.page} data-product-page>
@@ -234,8 +256,8 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
           </div>
         </div>
         <div className={styles.headerActions}>
-          {isActive && <a className={styles.primaryButton} href={joinHref}>Participar</a>}
-          {isOwner && <button type="button" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog" aria-label="Definições" title="Definições" className={styles.settingsLink}>
+          {canJoin && <a className={styles.primaryButton} href={joinHref}>Participar</a>}
+          {(isOwner || isClipper) && <button type="button" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog" aria-label="Definições" title="Definições" className={styles.settingsLink}>
             <Settings size={18} strokeWidth={1.5} aria-hidden="true" />
           </button>}
         </div>
@@ -244,8 +266,10 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
 
     <main className={styles.main}>
       <h1 className={styles.srOnly}>{lb.name} · {name}</h1>
-      {lb.ends_at && <section className={summary.timerSection} aria-label="Fim da competição">
-        <CompetitionClock target={lb.ends_at} />
+      {isOwner && prizeDue ? <section className={summary.timerSection} aria-label="Entregar prémios">
+        <PrizeDueBanner prize={prizeDue} leaderboardId={lb.id} returnTo={`/${lb.slug}`} />
+      </section> : (clockTarget ?? lb.ends_at) && <section className={summary.timerSection} aria-label="Fim da competição">
+        <CompetitionClock target={(clockTarget ?? lb.ends_at)!} />
       </section>}
 
       <section className={summary.stats} aria-label="Estatísticas da competição">
@@ -325,7 +349,7 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
             })}</tbody>
           </table>
         </div>
-        {rows.length === 0 && <div className={styles.empty}><Users size={24} /><h3>A corrida começa contigo</h3><p>Ainda não há participantes nesta competição.</p>{isActive && <a className={styles.primaryButton} href={joinHref}>Participar</a>}</div>}
+        {rows.length === 0 && <div className={styles.empty}><Users size={24} /><h3>A corrida começa contigo</h3><p>Ainda não há participantes nesta competição.</p>{canJoin && <a className={styles.primaryButton} href={joinHref}>Participar</a>}</div>}
         </div>
       </section>
 
@@ -347,6 +371,6 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
       </div>
     </SettingsDrawer>}
     {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)} />}
-    {settingsOpen && <SettingsDrawer onClose={() => setSettingsOpen(false)}>{settingsContent}</SettingsDrawer>}
+    {settingsOpen && <SettingsDrawer onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
   </div>
 }

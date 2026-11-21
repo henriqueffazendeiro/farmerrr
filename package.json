@@ -13,7 +13,8 @@
     "test:clippers": "node --test scripts/test-clippers.cjs",
     "test:streams": "node --test scripts/test-streams.cjs",
     "stripe:setup": "node scripts/setup-stripe.cjs",
-    "test:billing": "node --test scripts/test-billing.cjs"
+    "test:billing": "node --test scripts/test-billing.cjs",
+    "test:prizes": "node --test scripts/test-prizes.cjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.382",

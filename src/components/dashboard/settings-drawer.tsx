@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import styles from './settings-drawer.module.css'
 
-export function SettingsDrawer({ children, onClose, title = 'Definições', closeLabel = 'Fechar definições' }: { children: ReactNode; onClose?: () => void; title?: string; closeLabel?: string }) {
+export function SettingsDrawer({ children, onClose, title = 'Definições', closeLabel = 'Fechar definições', fill = false }: { children: ReactNode; onClose?: () => void; title?: string; closeLabel?: string; /** O conteúdo ocupa a altura toda (para encostar partes ao fundo). */ fill?: boolean }) {
   const titleId = useId()
   const dialog = useRef<HTMLDialogElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -36,7 +36,7 @@ export function SettingsDrawer({ children, onClose, title = 'Definições', clos
     <dialog ref={dialog} className={styles.drawer} data-closing={closing} aria-labelledby={titleId}
       onCancel={(event) => { event.preventDefault(); close() }}
       onClick={(event) => { if (event.target === event.currentTarget) close() }}>
-      <div className={styles.content}>
+      <div className={fill ? `${styles.content} ${styles.contentFill}` : styles.content}>
         <header className="mb-10 flex items-center justify-between gap-6">
           <h1 id={titleId} className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
           <button type="button" onClick={close} aria-label={closeLabel} className="grid h-9 w-9 shrink-0 place-items-center rounded-sm text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg">

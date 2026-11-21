@@ -10,15 +10,17 @@ import {
 import { Button } from '@/components/ui/button'
 import { signOutAction } from '@/lib/auth/actions'
 import { openBillingPortal } from '@/lib/billing/actions'
+import { StreamerPrizes } from '@/components/prizes/streamer-prizes'
 
-export async function SettingsContent({ id, streams }: { id: string; streams?: string }) {
+export async function SettingsContent({ id, streams, premios }: { id: string; streams?: string; premios?: string }) {
   const [leaderboard, creator] = await Promise.all([getOwnedLeaderboard(id), getMyCreator()])
   if (!leaderboard) notFound()
   if (!creator) redirect('/dashboard/inicio')
 
-  const [rewards, account] = await Promise.all([
+  const [rewards, account, prizes] = await Promise.all([
     getRewards(id),
     StreamConnections({ creatorId: creator.id, notice: streams }).then(children => AccountSettings({ children })),
+    StreamerPrizes({ board: leaderboard, notice: premios }),
   ])
 
   return (
@@ -32,6 +34,8 @@ export async function SettingsContent({ id, streams }: { id: string; streams?: s
         leaderboard={leaderboard}
         rewards={rewards}
       />
+
+      {prizes}
 
       {/* ─── Conta ─────────────────────────────────────────────────────── */}
       <section aria-labelledby="conta-title" className="mt-6 pt-6">

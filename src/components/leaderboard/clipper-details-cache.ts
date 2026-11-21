@@ -1,6 +1,7 @@
 import type { ClipperRow, VideoRow } from '@/lib/db/board'
 
-export type ClipperDetails = { clipper: ClipperRow; videos: VideoRow[] }
+/** earningsCents: prémios ganhos nesta competição (null se o streamer oculta as quantias). discord: se o clipper o associou. */
+export type ClipperDetails = { clipper: ClipperRow; videos: VideoRow[]; earningsCents?: number | null; discord?: string | null }
 type Entry = { at: number; promise: Promise<ClipperDetails>; value?: ClipperDetails }
 
 const MAX_AGE = 60_000

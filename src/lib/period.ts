@@ -114,6 +114,17 @@ export function periodBounds(
   }
 }
 
+/**
+ * Quando acaba a corrida atual (para o contador): o fim do mês nas competições mensais,
+ * ou a data de fim, se for antes.
+ */
+export function currentPeriodEnd(lb: { period_mode: PeriodMode; timezone: string; ends_at: string | null }): string | null {
+  const end = lb.ends_at ? new Date(lb.ends_at) : null
+  if (lb.period_mode !== 'monthly') return end?.toISOString() ?? null
+  const next = monthStart(addMonth(currentPeriodKey(lb)), lb.timezone || 'Europe/Lisbon')
+  return (end && end < next ? end : next).toISOString()
+}
+
 /** Os períodos que fazem sentido oferecer nos separadores da página pública. */
 export function availablePeriods(lb: { period_mode: PeriodMode; timezone: string }): string[] {
   return lb.period_mode === 'monthly' ? [currentPeriodKey(lb), ALL_TIME] : [ALL_TIME]

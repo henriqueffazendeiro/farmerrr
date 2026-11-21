@@ -80,7 +80,9 @@ const sections: LegalSection[] = [
     content: <>
       <p>
         As competições são organizadas exclusivamente pelo Streamer, que define datas, regras e prémios. O{' '}
-        {LEGAL.brand} fornece apenas a ferramenta de contagem e não organiza competições nem paga prémios.
+        {LEGAL.brand} fornece a ferramenta de contagem e, se o Streamer o escolher, um meio para pagar os prémios
+        (ver <a href="#pagamento-premios">Pagamento de prémios</a>). O {LEGAL.brand} não organiza competições, não
+        decide vencedores e não é responsável pelo montante dos prémios anunciados.
       </p>
       <ul>
         <li>O Streamer é responsável por publicar as regras, cumpri-las e entregar os prémios anunciados, de acordo com a lei aplicável.</li>
@@ -114,6 +116,35 @@ const sections: LegalSection[] = [
     </ul>,
   },
   {
+    id: 'pagamento-premios',
+    title: 'Pagamento de prémios',
+    content: <>
+      <p>
+        No fim de cada período da competição, o Streamer pode entregar os prémios de forma automática, através do
+        Serviço, ou de forma manual, diretamente a cada Clipper. Os vencedores e os valores resultam da classificação
+        final do período e dos prémios definidos pelo Streamer.
+      </p>
+      <p>Pagamento automático:</p>
+      <ul>
+        <li>O Streamer paga o valor total dos prémios através de um prestador de serviços de pagamento (Stripe), que detém e transfere os fundos. O {LEGAL.brand} não guarda dados bancários nem dados completos de cartões.</li>
+        <li>É cobrada uma taxa de serviço de 5% sobre o valor de cada prémio, descontada ao montante recebido pelo Clipper. O Streamer não paga taxas adicionais.</li>
+        <li>Para levantar o prémio, o Clipper cria uma conta junto do prestador de pagamentos e fornece os dados exigidos por lei, incluindo identificação e IBAN. O prestador pode pedir verificação adicional e atrasar ou recusar levantamentos, nos termos das suas próprias condições. O prestador pode exigir idade mínima de 18 anos.</li>
+        <li>Os prazos de chegada do dinheiro dependem do prestador de pagamentos e do banco do Clipper.</li>
+        <li>Os prémios de cada período só podem ser pagos uma vez. Pagamentos em duplicado são reembolsados.</li>
+        <li>Se o pagamento do Streamer for reembolsado ou contestado, os prémios ainda não levantados são cancelados.</li>
+      </ul>
+      <p>Pagamento manual:</p>
+      <ul>
+        <li>O Streamer paga diretamente a cada Clipper, fora do Serviço, e regista no Serviço que os prémios foram entregues. Não é cobrada taxa.</li>
+        <li>O {LEGAL.brand} não intervém, não verifica nem é responsável por estes pagamentos.</li>
+      </ul>
+      <p>
+        Os prémios recebidos podem constituir rendimento sujeito a impostos. Cada Clipper é responsável pelo cumprimento
+        das suas obrigações fiscais.
+      </p>
+    </>,
+  },
+  {
     id: 'livre-resolucao',
     title: 'Livre resolução',
     content: <p>
@@ -145,7 +176,23 @@ const sections: LegalSection[] = [
         O Utilizador mantém os direitos sobre o conteúdo que fornece e concede ao {LEGAL.brand} uma licença não
         exclusiva e gratuita para o alojar e apresentar no âmbito do Serviço. A licença cessa com a remoção do conteúdo.
       </p>
-      <p>O software, o design e a marca {LEGAL.brand} são propriedade do {LEGAL.brand} ou dos seus licenciadores.</p>
+      <p>
+        O software, o código-fonte, o design, a interface, os textos, os logótipos e a marca {LEGAL.brand} são
+        propriedade do {LEGAL.brand} ou dos seus licenciadores e estão protegidos pelo Código do Direito de Autor e dos
+        Direitos Conexos e pela legislação de propriedade industrial.
+      </p>
+      <p>Salvo autorização prévia e escrita do {LEGAL.brand}, não é permitido:</p>
+      <ul>
+        <li>copiar, reproduzir, modificar, distribuir ou publicar o Serviço ou qualquer parte dele, incluindo o código, o design e a interface;</li>
+        <li>criar obras derivadas, imitações ou um serviço concorrente com base no Serviço;</li>
+        <li>descompilar, desmontar ou fazer engenharia inversa do software, salvo nos casos expressamente permitidos por lei;</li>
+        <li>utilizar a marca {LEGAL.brand} ou sinais semelhantes suscetíveis de causar confusão.</li>
+      </ul>
+      <p>
+        O facto de parte do código ser transmitida para o navegador para o Serviço funcionar não confere qualquer licença
+        de utilização. A violação destas regras pode levar à suspensão ou encerramento da conta e ao recurso aos meios
+        legais adequados, incluindo pedidos de remoção junto dos prestadores de alojamento.
+      </p>
     </>,
   },
   {
@@ -182,8 +229,8 @@ const sections: LegalSection[] = [
     content: <>
       <p>
         Na medida permitida por lei, o {LEGAL.brand} não responde por danos indiretos ou lucros cessantes, pela
-        organização das competições e entrega de prémios, por falhas das Plataformas ou por conteúdo publicado pelos
-        Utilizadores.
+        organização das competições, pela entrega de prémios em pagamento manual, por decisões do prestador de
+        pagamentos, por falhas das Plataformas ou por conteúdo publicado pelos Utilizadores.
       </p>
       <p>
         Esta limitação não se aplica em caso de dolo, culpa grave ou danos à vida e à saúde, nem afasta os direitos
@@ -226,7 +273,7 @@ const sections: LegalSection[] = [
 const groups = groupSections(sections, [
   { title: 'Geral', icon: 'book', items: ['ambito', 'definicoes', 'elegibilidade'] },
   { title: 'Conta e serviço', icon: 'grid', items: ['contas', 'servico', 'competicoes', 'metricas'] },
-  { title: 'Pagamentos', icon: 'card', items: ['planos', 'livre-resolucao'] },
+  { title: 'Pagamentos', icon: 'card', items: ['planos', 'pagamento-premios', 'livre-resolucao'] },
   { title: 'Regras de utilização', icon: 'shield', items: ['uso-aceitavel', 'conteudo', 'terceiros', 'disponibilidade', 'cessacao'] },
   { title: 'Disposições legais', icon: 'scale', items: ['responsabilidade', 'alteracoes', 'lei', 'contactos'] },
 ])

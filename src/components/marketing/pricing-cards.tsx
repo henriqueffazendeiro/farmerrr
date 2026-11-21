@@ -1,4 +1,4 @@
-import { BarChart3, CircleCheck, CreditCard, LoaderCircle, PiggyBank, Sparkles } from 'lucide-react'
+import { BarChart3, CircleCheck, CreditCard, LoaderCircle, PiggyBank, Sparkles, Star } from 'lucide-react'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -15,8 +15,8 @@ const MONTHLY_FEATURES = [
   },
   {
     label: 'Ratings das tuas lives',
-    icon: 'ratings',
-    iconClassName: '',
+    icon: Star,
+    iconClassName: 'text-amber-400',
   },
 ] as const
 
@@ -92,13 +92,7 @@ export function PricingCards({ checkout, className }: { checkout?: { action: (fo
           <ul className="min-h-[148px] py-5">
             {plan.features.map(({ label, icon: Icon, iconClassName }) => (
               <li key={label} className="flex items-center gap-3 py-2 text-sm">
-                {Icon === 'ratings' ? (
-                  <span aria-hidden="true" className="inline-flex h-3 w-4 shrink-0 items-center justify-center rounded-sm bg-accent text-[8px] leading-none font-semibold tracking-[-0.04em] text-black">
-                    rrr.
-                  </span>
-                ) : (
-                  <Icon className={cn('h-4 w-4 shrink-0', iconClassName)} strokeWidth={2.25} />
-                )}
+                <Icon className={cn('h-4 w-4 shrink-0', iconClassName)} strokeWidth={2.25} />
                 <span className="text-fg-muted">{label}</span>
               </li>
             ))}

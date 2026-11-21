@@ -1,7 +1,33 @@
 'use server'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { CLIPPER_COOKIE } from '@/lib/recap/session'
 import { getClipperMembership } from './session'
+
+export type DiscordState = { ok?: boolean; error?: string }
+
+/** Nome de utilizador do Discord (novo formato, ou o antigo nome#1234). Vazio apaga. */
+const DISCORD = /^[A-Za-z0-9_.]{2,32}(#\d{4})?$/
+
+export async function saveClipperDiscordAction(_previous: DiscordState, form: FormData): Promise<DiscordState> {
+  const member = await getClipperMembership(String(form.get('slug') || ''))
+  if (!member) return { error: 'A sessão terminou. Entre novamente com o TikTok.' }
+  const discord = String(form.get('discord') ?? '').trim().replace(/^@/, '')
+  if (discord && !DISCORD.test(discord)) return { error: 'Nome de utilizador do Discord inválido.' }
+  const { error } = await createAdminClient().from('clipper_profiles')
+    .update({ discord: discord || null }).eq('id', member.participant.clipper_profile_id)
+  return error ? { error: 'Não foi possível guardar. Tente novamente.' } : { ok: true }
+}
+
+/** "Terminar sessão" do clipper: apaga a sessão e volta à página da competição (com "Participar"). */
+export async function clipperSignOutAction(form: FormData) {
+  const slug = String(form.get('slug') || '')
+  ;(await cookies()).delete(CLIPPER_COOKIE)
+  revalidatePath(`/${slug}`)
+  redirect(slug ? `/${encodeURIComponent(slug)}` : '/')
+}
 
 export async function requestClipperSync(form: FormData) {
   const slug = String(form.get('slug') || '')

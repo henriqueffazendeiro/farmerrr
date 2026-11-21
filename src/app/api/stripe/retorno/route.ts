@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/supabase/server'
 import { saveSubscription, stripe } from '@/lib/billing/stripe'
 import { createOnboardingPage, decodeOnboarding, existingPageSlug } from '@/lib/onboarding/create'
+import { settlePrizeCheckout } from '@/lib/prizes/payments'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,9 @@ export async function GET(request: NextRequest) {
   if (user && sessionId?.startsWith('cs_')) {
     try {
       const session = await stripe().checkout.sessions.retrieve(sessionId, { expand: ['subscription'] })
-      if (session.client_reference_id === user.id && session.subscription && typeof session.subscription !== 'string') {
+      const prize = session.client_reference_id === user.id ? await settlePrizeCheckout(session) : null
+      if (prize) destination.searchParams.set('premios', prize === 'paid' ? 'pago' : prize === 'refunded' ? 'duplicado' : 'processando')
+      else if (session.client_reference_id === user.id && session.subscription && typeof session.subscription !== 'string') {
         await saveSubscription(session.subscription)
         revalidatePath('/', 'layout')
         destination.searchParams.set('subscricao', 'ativa')

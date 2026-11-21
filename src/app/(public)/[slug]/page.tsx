@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { StreamerLeaderboard } from '@/components/leaderboard/streamer-leaderboard'
 import { getClippers, getCreatorOf, getLeaderboardBySlug, getLeaderboardTotals, getRewards, getVideos, isDemoLeaderboard } from '@/lib/leaderboards/public-data'
 import { liveDateFromCaption, type LiveClip } from '@/components/lives/live-clips'
-import { ALL_TIME, availablePeriods } from '@/lib/period'
+import { ALL_TIME, availablePeriods, currentPeriodEnd } from '@/lib/period'
 import { getCreatorLives } from '@/lib/streams/data'
 import { getCurrentUser } from '@/lib/supabase/server'
 import { SettingsContent } from '@/components/dashboard/settings-content'
@@ -11,6 +11,8 @@ import { joinFormProps } from '@/components/leaderboard/join-content'
 import { PageReady } from '@/components/dashboard/page-ready'
 import { creatorHasAccess } from '@/lib/billing/stripe'
 import { OwnerPausedOverlay, PausedPage } from '@/components/billing/paused'
+import { duePrize } from '@/lib/prizes/payments'
+import { ClipperSettingsView, clipperSettingsData } from '@/components/clipper/clipper-settings'
 
 export const revalidate = 60
 
@@ -41,6 +43,12 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
   // em vez de esperarem pelo resto dos dados da página.
   const settingsPromise = Promise.all([creatorPromise, userPromise]).then(([creator, user]) =>
     user && creator && user.id === creator.owner_id ? SettingsContent({ id: leaderboard.id }) : undefined)
+  // Um clipper que já participa vê as suas definições em vez do "Participar".
+  const clipperPromise = demo ? Promise.resolve(null) : settingsPromise.then(settings => settings !== undefined ? null
+    : clipperSettingsData(slug).catch(error => { console.error('[clipper settings]', error instanceof Error ? error.message : error); return null }))
+  // Só o dono vê o "Entregar prémios" quando o mês fecha.
+  const prizePromise = settingsPromise.then(settings => settings === undefined ? null
+    : duePrize(leaderboard).catch(error => { console.error('[prize due]', error instanceof Error ? error.message : error); return null }))
   // Carrega todos os períodos (no máximo 2: mês atual e "de sempre") em paralelo,
   // para o cliente trocar de separador sem voltar ao servidor.
   const datasetsPromise = Promise.all(periods.map(async period => {
@@ -57,10 +65,10 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
       return { wall: all.filter(video => wall.has(video.id)), all }
     })
   const accessPromise = demo ? Promise.resolve(true) : creatorHasAccess(leaderboard.creator_id)
-  const [creator, datasets, rewards, baseLives, settingsContent, videos, access] = await Promise.all([
+  const [creator, datasets, rewards, baseLives, settingsContent, videos, access, prizeDue, clipperData] = await Promise.all([
     creatorPromise, datasetsPromise, getRewards(leaderboard),
     demo ? Promise.resolve([]) : getCreatorLives(leaderboard.creator_id, leaderboard.timezone),
-    settingsPromise, videosPromise, accessPromise,
+    settingsPromise, videosPromise, accessPromise, prizePromise, clipperPromise,
   ])
   const isOwner = settingsContent !== undefined
   // Sem subscrição ativa: os visitantes veem "em pausa"; o dono vê a página com um aviso.
@@ -90,7 +98,8 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
     return { ...live, clips: tagged.slice(0, 24), clipCount: tagged.length }
   })
   return <>{!access && <OwnerPausedOverlay slug={leaderboard.slug} />}<StreamerLeaderboard leaderboard={leaderboard} creator={creator} datasets={datasets} join={joinFormProps(leaderboard)}
-    isOwner={isOwner} settingsContent={settingsContent}
+    isOwner={isOwner} settingsContent={settingsContent} prizeDue={prizeDue} clockTarget={currentPeriodEnd(leaderboard)}
+    clipperSettings={clipperData ? <ClipperSettingsView data={clipperData} /> : undefined}
     clippers={clippers} totals={totals} rewards={rewards}
     periods={periods} periodKey={periodKey}
     sort={ordem === 'media' ? 'media' : 'views'} demo={isDemoLeaderboard(leaderboard.id)} lives={lives} clips={clips} isLive={lives.some(live => live.isLive)} />
