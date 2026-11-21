@@ -71,11 +71,11 @@ alter table public.prize_payouts add column if not exists fee_cents bigint not n
 
 create index if not exists prize_payouts_clipper_idx on public.prize_payouts (clipper_profile_id, status);
 
-create trigger clipper_payout_accounts_touch before update on public.clipper_payout_accounts
+create or replace trigger clipper_payout_accounts_touch before update on public.clipper_payout_accounts
   for each row execute function public.touch_updated_at();
-create trigger prize_payments_touch before update on public.prize_payments
+create or replace trigger prize_payments_touch before update on public.prize_payments
   for each row execute function public.touch_updated_at();
-create trigger prize_payouts_touch before update on public.prize_payouts
+create or replace trigger prize_payouts_touch before update on public.prize_payouts
   for each row execute function public.touch_updated_at();
 
 alter table public.clipper_payout_accounts enable row level security;
