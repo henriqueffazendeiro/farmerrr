@@ -65,7 +65,7 @@ export function ClipperSettingsView({ data, premios, preview = false }: { data: 
       <ClipperPrizesView prizes={data.prizes} account={data.payoutAccount} slug={data.slug} preview={preview} />
     </Section>}
 
-    <section aria-label="Sessão" className="mt-auto shrink-0 pt-3">
+    <section aria-label="Sessão" className="mt-6 shrink-0 sm:mt-auto sm:pt-3">
       <form action={preview ? undefined : clipperSignOutAction}>
         <input type="hidden" name="slug" value={data.slug} />
         <Button type={preview ? 'button' : 'submit'} variant="danger" className="w-full border-0 bg-danger/10 hover:bg-danger/20">Terminar sessão</Button>

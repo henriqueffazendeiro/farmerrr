@@ -82,7 +82,10 @@
   .drawer[open], .drawer::backdrop { animation: none; }
 }
 
-/* Sem scroll (Conta do clipper): o último bloco estica até à barra "Guardar alterações". */
-.content.contentFixed { display: flex; flex-direction: column; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
-.contentFixed > header { margin-bottom: 28px; }
-.contentFixed > :last-child { flex: 1; min-height: 0; }
+/* Sem scroll no computador (Conta do clipper): o último bloco estica até à barra "Guardar alterações".
+   No telemóvel o painel faz scroll normalmente. */
+@media (min-width: 640px) {
+  .content.contentFixed { display: flex; flex-direction: column; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .contentFixed > header { margin-bottom: 28px; }
+  .contentFixed > :last-child { flex: 1; min-height: 0; }
+}

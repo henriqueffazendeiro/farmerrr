@@ -42,7 +42,7 @@ export function ClipperPrizesView({ prizes, account, slug, preview = false }: {
   return (
     <div className="flex min-h-0 flex-col">
       {/* Mostra 3 prémios de cada vez; os restantes com scroll. */}
-      <ul className="max-h-[170px] min-h-[57px] divide-y divide-line/50 overflow-y-auto overscroll-contain text-sm [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+      <ul className="max-h-[170px] min-h-[57px] divide-y divide-line/50 overflow-y-auto text-sm [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
         {prizes.map(prize => <li key={prize.id} className="flex items-center gap-3 py-2.5">
           {/* O lugar com a coroa de louros, como na tabela do ranking. */}
           <span className={`${ranking.position} ${prize.position <= 3 ? ranking[`rank${prize.position}`] : ''} !h-[30px] !w-[30px] shrink-0 [&>span]:!text-[11px] [&>svg]:!h-[26px] [&>svg]:!w-[30px]`} aria-label={`${prize.position}.º lugar`}>
