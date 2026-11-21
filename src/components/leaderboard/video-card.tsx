@@ -1,4 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import { Flame, Heart, MessageCircle, Play } from 'lucide-react'
+import { TikTokPlayer } from './tiktok-player'
 import type { VideoRow } from '@/lib/db/board'
 import { compactNumber, shortDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -13,10 +17,17 @@ export function VideoCard({
   showClipper?: boolean
 }) {
   const href = video.url ?? video.embed_link ?? undefined
+  const [playing, setPlaying] = useState(false)
 
   return (
-    <a
+    <><a
       href={href}
+      aria-haspopup={video.provider === 'tiktok' ? 'dialog' : undefined}
+      onClick={event => {
+        if (video.provider !== 'tiktok' || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        event.preventDefault()
+        setPlaying(true)
+      }}
       target="_blank"
       rel="noreferrer"
       className={cn(
@@ -81,5 +92,6 @@ export function VideoCard({
         </div>
       </div>
     </a>
+    {playing && <TikTokPlayer video={video} onClose={() => setPlaying(false)} />}</>
   )
 }

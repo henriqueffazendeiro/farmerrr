@@ -48,13 +48,45 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (path === '/entrar' || path === '/registar')) {
+    // Quem já tem sessão salta o formulário, mas mantém o destino pedido.
+    const seguinte = request.nextUrl.searchParams.get('seguinte')
+    const target = seguinte?.startsWith('/') ? seguinte : '/dashboard'
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
     url.search = ''
-    return NextResponse.redirect(url)
+    // "Começar" aponta para /dashboard/novo; quem já tem página vai direto
+    // para ela, sem renderizar /dashboard/novo só para voltar a redirecionar.
+    url.pathname = target === '/dashboard/novo' ? (await myLeaderboardPath(supabase, user.id)) ?? target : target
+    return withCookies(NextResponse.redirect(url), response)
+  }
+
+  if (user && path === '/dashboard/novo' && request.nextUrl.searchParams.get('preview') !== '1') {
+    const leaderboardPath = await myLeaderboardPath(supabase, user.id)
+    if (leaderboardPath) {
+      const url = request.nextUrl.clone()
+      url.pathname = leaderboardPath
+      url.search = ''
+      return withCookies(NextResponse.redirect(url), response)
+    }
   }
 
   return response
+}
+
+/** Mesma escolha que getMyCreator + getMyLeaderboard: criador mais antigo, ranking mais recente. */
+async function myLeaderboardPath(supabase: ReturnType<typeof createServerClient>, userId: string) {
+  const { data: creator } = await supabase.from('creators').select('id')
+    .eq('owner_id', userId).order('created_at', { ascending: true }).limit(1).maybeSingle()
+  if (!creator) return null
+  const { data: leaderboard } = await supabase.from('leaderboards').select('slug')
+    .eq('creator_id', creator.id).order('created_at', { ascending: false }).order('id', { ascending: false })
+    .limit(1).maybeSingle()
+  return leaderboard?.slug ? `/${leaderboard.slug}` : null
+}
+
+/** Um redirect novo perderia os cookies de sessão renovados pelo getUser(). */
+function withCookies(redirect: NextResponse, from: NextResponse) {
+  for (const cookie of from.cookies.getAll()) redirect.cookies.set(cookie)
+  return redirect
 }
 
 export const config = {

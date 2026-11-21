@@ -14,7 +14,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pla
   const user = await getCurrentUser()
   if (!user) return NextResponse.redirect(new URL('/entrar', publicEnv.NEXT_PUBLIC_APP_URL))
   const creator = await getMyCreator()
-  if (!creator || !streamConfigured(platform)) return NextResponse.redirect(new URL('/dashboard/conta?streams=unavailable', publicEnv.NEXT_PUBLIC_APP_URL))
+  if (!creator || !streamConfigured(platform)) return NextResponse.redirect(new URL('/dashboard?streams=unavailable', publicEnv.NEXT_PUBLIC_APP_URL))
   const state = randomBytes(32).toString('base64url')
   const verifier = randomBytes(48).toString('base64url')
   const jar = await cookies()

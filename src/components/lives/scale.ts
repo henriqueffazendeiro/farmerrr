@@ -1,4 +1,4 @@
-import { demoClipsForLive, type LiveClip } from './live-clips'
+import { clipBonus, demoClipsForLive, type LiveClip } from './live-clips'
 
 export const SCALE = [
   { min: 9.5, label: 'Lendária', bg: '#1DA1F2', fg: '#FFFFFF' },
@@ -25,10 +25,18 @@ export type Live = {
   average: number
   count: number
   open: boolean
+  /** Nota que este browser já deu a esta live (só lives reais). */
+  myVote?: number
   thumbnail: string | null
   vod: string | null
   clips?: LiveClip[]
+  /** Clips com a data desta live na descrição (ex.: #20/11). Entram na nota como bónus. */
+  clipCount?: number
 }
+
+/** Nota mostrada: média dos votos + bónus pelos clips associados (máx. 10). Sem votos não há nota. */
+export const scoreOf = (live: Pick<Live, 'average' | 'count' | 'clipCount'>) =>
+  live.count ? Math.min(10, Math.round((live.average + clipBonus(live.clipCount ?? 0)) * 10) / 10) : 0
 
 // Fixture restricted to the existing demonstration page; these are not real ratings.
 export function demoLives(): Live[] {

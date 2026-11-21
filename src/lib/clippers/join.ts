@@ -34,6 +34,7 @@ export async function connectAccountToLeaderboard(options: {
     throw new Error('Esta competição não aceita inscrições.')
   }
   if (!account.providerUserId || account.providerUserId !== tokens.providerUserId) throw new Error('Identidade TikTok inválida.')
+  if (/^(public|apify):/.test(account.providerUserId) || !tokens.accessToken) throw new Error('Autoriza a tua conta através do login TikTok.')
   if (!tokens.scopes.includes('video.list')) throw new Error('Autoriza a leitura de vídeos para participar.')
 
   const displayName = account.displayName || account.username || 'Clipper'
@@ -52,6 +53,7 @@ export async function connectAccountToLeaderboard(options: {
   let socialAccountId: string
 
   const accountFields = {
+    provider_user_id: account.providerUserId,
     provider_union_id: account.unionId,
     username: account.username,
     display_name: account.displayName,
@@ -98,7 +100,6 @@ export async function connectAccountToLeaderboard(options: {
       .insert({
         clipper_profile_id: clipperProfileId,
         provider,
-        provider_user_id: account.providerUserId,
         ...accountFields,
       })
       .select('id')

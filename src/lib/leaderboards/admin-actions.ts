@@ -3,7 +3,10 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getMyCreator, getMyLeaderboard, getOwnedLeaderboard } from '@/lib/db/queries'
 import { seedAvailable, seedDemoCompetition, seedLeaderboard } from '@/lib/dev/seed'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { recomputeHistoryForAccount } from '@/lib/sync/history'
 
 async function slugOf(leaderboardId: string) {
   const supabase = await createClient()
@@ -15,9 +18,32 @@ async function slugOf(leaderboardId: string) {
   return data?.slug ?? null
 }
 
+/** Só o dono da competição pode gerir: sem isto, qualquer pessoa disparava o recálculo (com a chave de admin). */
+async function isOwner(leaderboardId: string) {
+  return Boolean(leaderboardId && await getOwnedLeaderboard(leaderboardId))
+}
+
+/** Recalcula o ranking. Chamar só depois de isOwner(). */
 async function refresh(leaderboardId: string) {
   const supabase = await createClient()
-  await supabase.rpc('recompute_leaderboard', { p_leaderboard_id: leaderboardId })
+  await createAdminClient().rpc('recompute_leaderboard', { p_leaderboard_id: leaderboardId })
+
+  // Keep history totals consistent with exclusions and participation changes.
+  // Resolve membership through the caller's RLS before doing derived writes.
+  const { data: participants } = await supabase.from('leaderboard_participants')
+    .select('clipper_profile_id').eq('leaderboard_id', leaderboardId).eq('status', 'active')
+  if (participants?.length) {
+    const admin = createAdminClient()
+    const { data: accounts, error } = await admin.from('social_accounts').select('id,clipper_profile_id')
+      .in('clipper_profile_id', participants.map(p => p.clipper_profile_id))
+    if (error) throw error
+    const seen = new Set<string>()
+    for (const account of accounts ?? []) {
+      if (seen.has(account.clipper_profile_id)) continue
+      seen.add(account.clipper_profile_id)
+      await recomputeHistoryForAccount(admin, account.id)
+    }
+  }
 
   const slug = await slugOf(leaderboardId)
   if (slug) revalidateTag(`lb:${slug}`)
@@ -32,6 +58,7 @@ export async function setParticipantStatusAction(formData: FormData) {
 
   if (!leaderboardId || !participantId) return
   if (status !== 'active' && status !== 'disqualified') return
+  if (!await isOwner(leaderboardId)) return
 
   const supabase = await createClient()
   await supabase
@@ -50,6 +77,7 @@ export async function excludeVideoAction(formData: FormData) {
   const reason = String(formData.get('reason') ?? '').trim() || null
 
   if (!leaderboardId || !videoId) return
+  if (!await isOwner(leaderboardId)) return
 
   const supabase = await createClient()
   const {
@@ -70,6 +98,7 @@ export async function includeVideoAction(formData: FormData) {
   const leaderboardId = String(formData.get('leaderboardId') ?? '')
   const videoId = String(formData.get('videoId') ?? '')
   if (!leaderboardId || !videoId) return
+  if (!await isOwner(leaderboardId)) return
 
   const supabase = await createClient()
   await supabase
@@ -84,7 +113,7 @@ export async function includeVideoAction(formData: FormData) {
 /** Botão "Atualizar" — recalcula o ranking com os dados que já existem. */
 export async function refreshRankingAction(formData: FormData) {
   const leaderboardId = String(formData.get('leaderboardId') ?? '')
-  if (!leaderboardId) return
+  if (!await isOwner(leaderboardId)) return
   await refresh(leaderboardId)
 }
 
@@ -100,6 +129,8 @@ export async function seedDemoAction(formData: FormData) {
   if (!leaderboardId || !slug) return
 
   if (!seedAvailable()) return
+  const owned = await getOwnedLeaderboard(leaderboardId)
+  if (!owned || owned.slug !== slug) return
   await seedLeaderboard(slug, count)
 
   await refresh(leaderboardId)
@@ -111,6 +142,11 @@ export async function seedDemoAction(formData: FormData) {
  */
 export async function createDemoCompetitionAction() {
   if (!seedAvailable()) return
+  const creator = await getMyCreator()
+  if (creator) {
+    const existing = await getMyLeaderboard(creator.id)
+    if (existing) redirect(`/dashboard/l/${existing.id}/definicoes`)
+  }
 
   const supabase = await createClient()
   const {
@@ -129,5 +165,5 @@ export async function createDemoCompetitionAction() {
   revalidateTag(`lb:${result.slug}`)
   revalidatePath('/dashboard')
 
-  if (board) redirect(`/dashboard/l/${board.id}`)
+  if (board) redirect(`/dashboard/l/${board.id}/definicoes`)
 }

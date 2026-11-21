@@ -27,13 +27,14 @@ const QUESTIONS = [
   },
 ]
 
-export function FaqSection() {
+/** `contained`: a linha de cima fica dentro da largura máxima do conteúdo (em vez de atravessar o ecrã). */
+export function FaqSection({ contained = false }: { contained?: boolean } = {}) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-24 border-t border-line/50 py-20 sm:py-28">
+    <section id="faq" aria-labelledby="faq-title" className={contained ? 'scroll-mt-24 pb-20 sm:pb-28' : 'scroll-mt-24 border-t border-line/50 py-20 sm:py-28'}>
       <Container>
-        <div className="flex w-full flex-col gap-10">
+        <div className={contained ? 'flex w-full flex-col gap-10 border-t border-line/50 pt-20 sm:pt-28' : 'flex w-full flex-col gap-10'}>
           <div>
             <h2 id="faq-title" className="text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-4xl">Perguntas frequentes<span className="text-accent">.</span></h2>
           </div>

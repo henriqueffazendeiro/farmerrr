@@ -20,3 +20,10 @@ files.zip
 Claude outputs/
 Recap de setembro.html
 public/references/
+
+# Ambientes Python dos serviços locais
+.venv/
+__pycache__/
+services/*/results/
+dist/
+*.spec

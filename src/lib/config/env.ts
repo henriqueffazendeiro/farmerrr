@@ -13,6 +13,7 @@ const publicSchema = z.object({
   NEXT_PUBLIC_APP_NAME: z.string().default('farmerrr'),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_GOOGLE_AUTH: z.string().optional(),
 })
 
 // Next substitui NEXT_PUBLIC_* em tempo de build: têm de ser referidas
@@ -22,7 +23,11 @@ export const publicEnv = publicSchema.parse({
   NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || undefined,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || undefined,
+  NEXT_PUBLIC_GOOGLE_AUTH: process.env.NEXT_PUBLIC_GOOGLE_AUTH?.trim() || undefined,
 })
+
+/** Botão "Continuar com Google": só aparece depois de o provider estar ativo no Supabase. */
+export const googleAuthEnabled = publicEnv.NEXT_PUBLIC_GOOGLE_AUTH === '1'
 
 /** true quando há credenciais suficientes para falar com o Supabase. */
 export const supabaseConfigured =
@@ -44,7 +49,7 @@ export function requireSupabasePublic() {
 
 const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  SOCIAL_PROVIDER: z.enum(['mock', 'tiktok']).default('mock'),
+  SOCIAL_PROVIDER: z.enum(['mock', 'tiktok']).default('tiktok'),
   TIKTOK_CLIENT_KEY: z.string().optional(),
   TIKTOK_CLIENT_SECRET: z.string().optional(),
   TIKTOK_REDIRECT_URI: z.string().url().optional(),

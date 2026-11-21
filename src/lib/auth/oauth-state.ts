@@ -41,8 +41,8 @@ export function createState(leaderboardId: string, slug: string, recap = false, 
 }
 
 export function readState(state: string, nonceFromCookie: string | undefined): OAuthState | null {
-  const [body, signature] = state.split('.')
-  if (!body || !signature) return null
+  const [body, signature, extra] = state.split('.')
+  if (!body || !signature || extra) return null
 
   const expected = sign(body)
   const a = Buffer.from(signature)
@@ -56,7 +56,8 @@ export function readState(state: string, nonceFromCookie: string | undefined): O
     return null
   }
 
-  if (payload.exp < Date.now()) return null
+  if (!Number.isFinite(payload.exp) || payload.exp <= Date.now()
+    || typeof payload.leaderboardId !== 'string' || typeof payload.slug !== 'string') return null
   if (!nonceFromCookie || nonceFromCookie !== payload.nonce) return null
 
   return payload

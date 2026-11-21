@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -11,7 +11,9 @@
     "streams:watch": "node scripts/watch-streams.cjs",
     "clippers:watch": "node scripts/watch-clippers.cjs",
     "test:clippers": "node --test scripts/test-clippers.cjs",
-    "test:streams": "node --test scripts/test-streams.cjs"
+    "test:streams": "node --test scripts/test-streams.cjs",
+    "stripe:setup": "node scripts/setup-stripe.cjs",
+    "test:billing": "node --test scripts/test-billing.cjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.382",
@@ -26,6 +28,7 @@
     "react-dom": "^19.1.0",
     "remotion": "4.0.382",
     "server-only": "^0.0.1",
+    "stripe": "^17.7.0",
     "tailwind-merge": "^2.5.5",
     "zod": "^3.24.1"
   },

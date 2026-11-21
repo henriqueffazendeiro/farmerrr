@@ -30,10 +30,13 @@ Antes de ativar os agendamentos:
 4. Ativar as tarefas e acompanhar o histórico de execuções e os limites de uso.
 
 O cron-job.org espera até 30 segundos pela resposta. O processamento de clippers
-usa limit=1 para reduzir cada lote, mas uma primeira importação ou uma plataforma
-lenta ainda pode ultrapassar esse tempo. Se acontecer, é necessário dividir o
-trabalho em lotes menores antes de considerar a automação validada. Não assumir
-que um timeout do agendador cancelou o trabalho no servidor: verificar os logs.
+usa limit=1 para reduzir cada lote. Para TikTok, usar
+`/api/cron/sync?limit=1&background=1` se a importação exceder esse prazo: responde
+HTTP 202 e executa a fila com `after()` no servidor Next/Vercel, dentro do limite
+de 300 segundos da função. A resposta confirma apenas a aceitação. Verificar os
+resultados em `sync_jobs` e os logs; não confundir 202 com importação concluída.
+O diagnóstico síncrono continua disponível sem `background=1`. Não criar duas
+tarefas para a mesma fila. Ajustar a capacidade após medir duração e atrasos.
 
 O worker de lives processa até dez canais por chamada. A frequência não é uma
 garantia de deteção: atrasos, quotas ou falhas podem adiar a atualização. O serviço

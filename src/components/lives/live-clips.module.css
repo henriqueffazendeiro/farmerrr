@@ -4,7 +4,7 @@
 .panel .filters { --active-tab: 0; position: relative; isolation: isolate; display: flex; padding: 4px; margin-bottom: 24px; background: #18181b; border-radius: var(--radius-ui); }
 .panel .filters:has(button:nth-child(2)[aria-pressed="true"]) { --active-tab: 1; }
 .panel .filters:has(button:nth-child(3)[aria-pressed="true"]) { --active-tab: 2; }
-.panel .filters::before { content: ''; position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); border: 1px solid #3f3f46; border-radius: var(--radius-ui); background: #27272a; box-shadow: 0 1px 5px #0003; transform: translateX(calc(var(--active-tab) * 100%)); transition: transform 440ms cubic-bezier(.4, 0, .2, 1); pointer-events: none; }
+.panel .filters::before { content: ''; position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); border-radius: var(--radius-ui); background: #27272a; box-shadow: 0 1px 5px #0003; transform: translateX(calc(var(--active-tab) * 100%)); transition: transform 440ms cubic-bezier(.4, 0, .2, 1); pointer-events: none; }
 .panel .filters button { flex: 1; min-width: 0; padding: 10px 6px; color: #919198; text-align: center; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 21px; font-weight: 500; border: 1px solid transparent; border-radius: var(--radius-ui); background: transparent; transition: color 220ms ease; }
 .panel .filters button:hover, .panel .filters button[aria-pressed="true"] { color: #fff; }
 @media (max-width: 639px) { .panel .filters button { font-size: 12px; line-height: 18px; padding: 8px 3px; } }
@@ -17,9 +17,9 @@
 .panel .thumbnail { position: relative; aspect-ratio: 9 / 16; max-height: 320px; width: 100%; overflow: hidden; background: #000; }
 .panel .thumbnail > img { object-fit: cover; }
 .panel .shade { position: absolute; inset: 0; background: linear-gradient(to top, #000e 0%, #0005 32%, transparent 62%), linear-gradient(to left, #0005, transparent 35%); pointer-events: none; }
-.panel .badges { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 6px; pointer-events: none; z-index: 1; }
-.panel .topBadge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: var(--radius-ui); background: #fff; color: #000; font-size: 10px; line-height: 15px; font-weight: 900; text-transform: uppercase; box-shadow: 0 4px 6px #0002; }
-.panel .views { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 4px 10px; border: 1px solid #3f3f46; border-radius: var(--radius-ui); background: #000c; color: #fff; font-size: 12px; line-height: 16px; font-weight: 700; backdrop-filter: blur(12px); }
+.panel .badges { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; align-items: stretch; justify-content: space-between; flex-wrap: wrap; gap: 6px; pointer-events: none; z-index: 1; }
+.panel .topBadge { display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 26px; height: 26px; padding: 0; flex-shrink: 0; border-radius: var(--radius-ui); background: #fff; color: #000; font-size: 10px; line-height: 15px; font-weight: 900; text-transform: uppercase; box-shadow: 0 4px 6px #0002; }
+.panel .views { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 4px 10px; border: 0; border-radius: var(--radius-ui); background: #27272a; color: #fff; font-size: 12px; line-height: 16px; font-weight: 700; backdrop-filter: blur(12px); }
 .panel .views svg { color: #a1a1aa; }
 .panel .playOverlay { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: pointer; transition: none; }
 .panel .playOverlay:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; }
@@ -42,4 +42,26 @@
 .panel .metrics svg { filter: drop-shadow(0 1px 2px #0008); }
 .panel .empty { padding: 24px; border-radius: var(--radius-ui); background: var(--surface-2); color: var(--muted); font-size: 14px; }
 @media (max-width: 980px) { .panel .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 520px) { .panel { margin-top: 36px; }.panel .grid { grid-template-columns: minmax(0, 1fr); }.panel .header h2 { font-size: 20px; } }
+@media (max-width: 520px) {
+  .panel { margin-top: 36px; }
+  .panel .header h2 { font-size: 20px; }
+  /* Telemóvel: 2 clips por linha, com os elementos sobre a miniatura mais compactos. */
+  .panel .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .panel .badges { top: 8px; left: 8px; right: 8px; gap: 4px; }
+  .panel .topBadge { width: 22px; height: 22px; font-size: 9px; }
+  .panel .views { gap: 3px; padding: 2px 6px; font-size: 10px; line-height: 14px; }
+  .panel .views svg { width: 11px; height: 11px; }
+  .panel .authorRow { left: 8px; right: 40px; bottom: 10px; gap: 4px; }
+  .panel .author { gap: 5px; }
+  .panel .author img { width: 18px; height: 18px; }
+  .panel .author strong { max-width: 100%; font-size: 10px; line-height: 13px; }
+  .panel .authorRow h3 { font-size: 10px; line-height: 13px; }
+  .panel .metrics { right: 5px; bottom: 10px; gap: 8px; }
+  .panel .metrics > span { min-width: 28px; font-size: 9px; line-height: 12px; }
+  .panel .metrics svg { width: 16px; height: 16px; }
+}
+
+/* Mural: 2 filas visíveis, o resto com scroll dentro da caixa. */
+.panel .scroller { overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent); }
+.panel .scroller[data-at-end="true"] { -webkit-mask-image: none; mask-image: none; }
+.panel .scroller::-webkit-scrollbar { display: none; }

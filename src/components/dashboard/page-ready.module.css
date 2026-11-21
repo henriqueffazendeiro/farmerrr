@@ -1,0 +1,15 @@
+.dialog { position: fixed; inset: 0; margin: auto; width: min(480px, calc(100% - 40px)); max-width: none; max-height: calc(100dvh - 40px); padding: 0; border: 0; background: transparent; color: var(--color-fg); overflow: visible; }
+.dialog::backdrop { background: rgb(0 0 0 / 32%); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.content { position: relative; padding: 48px 32px 32px; max-height: calc(100dvh - 40px); overflow-y: auto; border: 0; border-radius: 16px; background: var(--color-canvas); text-align: center; box-shadow: 0 24px 90px #0003; animation: enter 360ms cubic-bezier(.22, 1, .36, 1) both; }
+.check { display: block; width: 96px; height: 96px; margin: 0 auto 20px; }
+.content h1 { font-size: clamp(28px, 5vw, 36px); font-weight: 600; letter-spacing: -.04em; }
+.content p { margin-top: 12px; font-size: 14px; line-height: 1.7; color: var(--color-fg-muted); }
+.close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 6px; color: var(--color-fg-muted); cursor: pointer; }
+.close:hover { background: var(--color-surface-2); color: var(--color-fg); }
+.enter { width: 100%; padding: 13px 20px; margin-top: 28px; border-radius: 6px; background: var(--color-accent); color: var(--color-canvas); font-size: 14px; font-weight: 600; cursor: pointer; }
+.enter:hover { filter: brightness(1.08); }
+.enter:focus-visible, .close:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
+.notice { padding: 12px; background: var(--color-surface-2); border-radius: 6px; }
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 2; pointer-events: none; }
+@keyframes enter { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .content { animation: none; } .confetti { display: none; } }

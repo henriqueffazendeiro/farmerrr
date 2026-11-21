@@ -12,6 +12,7 @@ type Admin = SupabaseClient<Database>
 
 function toTokens(account: SocialAccount): ProviderTokens {
   return {
+    username: account.username,
     providerUserId: account.provider_user_id,
     accessToken: account.access_token_enc ? decryptToken(account.access_token_enc) : '',
     refreshToken: account.refresh_token_enc ? decryptToken(account.refresh_token_enc) : null,
@@ -59,10 +60,16 @@ export async function usableTokens(
     current.accessExpiresAt != null &&
     current.accessExpiresAt.getTime() - Date.now() < REFRESH_MARGIN_MS
 
+  if (!current.accessToken || (expiring && (!current.refreshToken
+    || (current.refreshExpiresAt && current.refreshExpiresAt.getTime() <= Date.now())))) {
+    await markNeedsReauth(admin, account.id)
+    throw new ProviderError('Volta a autorizar a tua conta TikTok.', 'auth')
+  }
   if (!expiring || !current.refreshToken) return current
 
   try {
     const refreshed = await provider.refreshTokens(current.refreshToken)
+    if (refreshed.providerUserId !== account.provider_user_id) throw new ProviderError('Identidade TikTok inválida na renovação.', 'auth')
     await persistTokens(admin, account.id, refreshed)
     return refreshed
   } catch (error) {

@@ -1,36 +1,49 @@
 'use client'
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useOptimistic, useRef, useState, useTransition, type MouseEvent, type ReactNode } from 'react'
 import Link from 'next/link'
-import { BrandLogo } from '@/components/ui/brand-logo'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { LivesView } from '@/components/lives/LivesView'
 import type { Live } from '@/components/lives/scale'
-import { ArrowUpRight, Clock, Eye, Film, Gift, Heart, ShieldCheck, Users, X } from 'lucide-react'
+import type { LiveClip } from '@/components/lives/live-clips'
+import { Clock, Eye, Film, Gift, Heart, Settings, Users } from 'lucide-react'
 import type { Creator, Leaderboard, Reward } from '@/lib/db/types'
-import type { ClipperRow, VideoRow } from '@/lib/db/board'
+import type { ClipperRow } from '@/lib/db/board'
 import { ALL_TIME, periodLabel } from '@/lib/period'
 import { compactNumber, fullNumber, money } from '@/lib/format'
 import { AutoRefresh } from './auto-refresh'
 import { AnimatedNumber } from './animated-number'
+import { PrizeAmount } from './prize-amount'
+import { Laurel } from './laurel'
 import styles from './streamer-leaderboard.module.css'
 import summary from './competition-summary.module.css'
 import ranking from './ranking.module.css'
 import { ClipperDialog } from './clipper-dialog'
+import { SettingsDrawer } from '@/components/dashboard/settings-drawer'
+import type { JoinFormProps } from './join-form'
+import { loadClipperDetails } from './clipper-details-cache'
+
+type Dataset = { clippers: ClipperRow[]; totals: Props['totals'] }
 
 type Props = {
   leaderboard: Leaderboard
+  /** Dados de todos os períodos, para trocar de separador sem ir ao servidor. */
+  datasets?: Record<string, Dataset>
+  join?: Omit<JoinFormProps, 'erro' | 'panel'>
   creator: Creator | null
   clippers: ClipperRow[]
   totals: { total_views: number; total_clips: number; active_clippers: number; total_likes: number; avg_views: number }
   rewards: Reward[]
-  videos: VideoRow[]
-  allVideos: VideoRow[]
   periods: string[]
   periodKey: string
   sort: 'views' | 'media'
   demo: boolean
   isLive?: boolean
+  isOwner?: boolean
+  settingsContent?: ReactNode
   lives?: Live[]
+  /** Clips reais dos clippers, para o mural por baixo do Absolute Cinema. */
+  clips?: LiveClip[]
 }
 
 function Portrait({ src, name, className = '' }: { src: string | null; name: string; className?: string }) {
@@ -41,19 +54,6 @@ function Portrait({ src, name, className = '' }: { src: string | null; name: str
       <img src={src} alt={name} onError={() => setFailed(true)} /> :
       <span>{name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('')}</span>}
   </span>
-}
-
-function Laurel({ className }: { className?: string }) {
-  return <svg viewBox="0 0 100 80" className={className} aria-hidden focusable="false">
-    {[false, true].map(mirror => <g key={String(mirror)} transform={mirror ? 'translate(100 0) scale(-1 1)' : undefined}>
-      <path d="M46 73 C13 65 9 35 27 10" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      {[{x:23,y:17,r:20},{x:17,y:28,r:0},{x:14,y:40,r:-20},{x:17,y:52,r:-42},{x:25,y:62,r:-62},{x:37,y:69,r:-80}].map(({x,y,r}, i) => <g key={i} transform={`translate(${x} ${y}) rotate(${r})`} fill="currentColor">
-        <path d="M0 3 C-12 -1 -12 -10 -9 -14 C-2 -11 1 -5 0 3Z" />
-        <path d="M1 4 C0 -4 4 -9 9 -10 C12 -3 8 2 1 4Z" opacity=".8" />
-      </g>)}
-      <path d="M38 76 Q46 69 53 72" fill="none" stroke="currentColor" strokeWidth="2" />
-    </g>)}
-  </svg>
 }
 
 function PodiumSurface({ place }: { place: number }) {
@@ -93,7 +93,41 @@ function PodiumSurface({ place }: { place: number }) {
   </svg>
 }
 
-function EventClock({ target }: { target: string }) {
+/**
+ * Anima as linhas quando a ordem muda (técnica FLIP): cada linha começa na posição
+ * antiga e desliza até à nova. Quem sobe passa por cima de quem desce.
+ */
+function useRankingFlip(order: string) {
+  const body = useRef<HTMLTableSectionElement>(null)
+  // Guarda a POSIÇÃO NA LISTA (índice) de cada clipper, não píxeis: assim só anima
+  // quem realmente trocou de lugar, e nunca por causa de mudanças de layout ao carregar.
+  const previous = useRef<Map<string, number> | null>(null)
+  useLayoutEffect(() => {
+    const element = body.current
+    if (!element) return
+    const rows = [...element.querySelectorAll<HTMLTableRowElement>('tr[data-id]')]
+    const before = previous.current
+    previous.current = new Map(rows.map((row, index) => [row.dataset.id!, index]))
+    if (!before || document.visibilityState !== 'visible' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const tops = rows.map(row => row.offsetTop)
+    rows.forEach((row, index) => {
+      const oldIndex = before.get(row.dataset.id!)
+      // Novo na lista, ou ficou no mesmo lugar: sem animação.
+      if (oldIndex === undefined || oldIndex === index || oldIndex >= rows.length) return
+      const delta = tops[oldIndex] - tops[index]
+      row.getAnimations().forEach(animation => animation.cancel())
+      row.dataset.moving = oldIndex > index ? 'up' : 'down'
+      const slide = row.animate([{ transform: `translateY(${delta}px)` }, { transform: 'none' }],
+        { duration: 620, easing: 'cubic-bezier(.22, 1, .36, 1)' })
+      const done = () => { delete row.dataset.moving }
+      slide.onfinish = done
+      slide.oncancel = done
+    })
+  }, [order])
+  return body
+}
+
+function CompetitionClock({ target }: { target: string }) {
   const [remaining, setRemaining] = useState<number | null>(null)
   useEffect(() => {
     const update = () => setRemaining(Math.max(0, new Date(target).getTime() - Date.now()))
@@ -104,7 +138,7 @@ function EventClock({ target }: { target: string }) {
   const seconds = Math.floor((remaining ?? 0) / 1000)
   const values = [Math.floor(seconds / 86400), Math.floor(seconds / 3600) % 24, Math.floor(seconds / 60) % 60, seconds % 60]
   return <div className={summary.countdown}>
-    {remaining === 0 ? <p className={summary.eventEnded}>Data da live atingida</p> : <div className={summary.clock}>
+    {remaining === 0 ? <p className={summary.eventEnded}>Competição terminada</p> : <div className={summary.clock}>
       {['dias', 'horas', 'min', 'seg'].map((unit, i) => <div key={unit} className={summary.clockUnit}>
         {i > 0 && <span className={summary.clockSeparator} aria-hidden>:</span>}
         <strong>{remaining === null ? '--' : String(values[i]).padStart(2, '0')}</strong><span>{unit}</span>
@@ -113,20 +147,42 @@ function EventClock({ target }: { target: string }) {
   </div>
 }
 
-export function StreamerLeaderboard({ leaderboard: lb, creator, clippers, totals, rewards, periods, periodKey, sort, demo, isLive, lives = [] }: Props) {
+export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [] }: Props) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
-  const rulesDialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => { if (rulesOpen) rulesDialog.current?.showModal() }, [rulesOpen])
   const [selectedClipper, setSelectedClipper] = useState<ClipperRow | null>(null)
   const isActive = lb.status === 'active'
-  const name = creator?.name ?? lb.name
+  const name = lb.name
   const liveStatus = isLive ?? (demo ? false : undefined)
   const currentPeriod = periods[0]
+  // Ordenação e período são lidos do URL no cliente. Como todos os períodos vêm
+  // carregados do servidor, trocar de separador é instantâneo (sem pedidos à rede).
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const sort: 'views' | 'media' = searchParams.get('ordem') === 'media' ? 'media' : 'views'
+  const urlPeriod = searchParams.get('periodo')
+  const wantedPeriod = sort === 'media' ? currentPeriod : urlPeriod && periods.includes(urlPeriod) ? urlPeriod : currentPeriod
+  const dataset = datasets?.[wantedPeriod]
+  const periodKey = dataset ? wantedPeriod : serverPeriodKey
+  const clippers = dataset?.clippers ?? serverClippers
+  const totals = dataset?.totals ?? serverTotals
   const isHistory = periodKey === ALL_TIME && periods.length > 1
-  const rows = [...clippers].sort((a, b) => sort === 'media' ? b.avgViews - a.avgViews || b.totalViews - a.totalViews : b.totalViews - a.totalViews)
-  const podium = [...clippers].sort((a, b) => b.totalViews - a.totalViews).slice(0, 3)
+  const activeTab = sort === 'media' ? 'media' : isHistory ? 'history' : 'views'
+  const [isPending, startTransition] = useTransition()
+  const [shownTab, setShownTab] = useOptimistic(activeTab)
+  // Desempate fixo (nome, depois id): com views iguais a ordem nunca muda sozinha entre atualizações.
+  const tieBreak = (a: ClipperRow, b: ClipperRow) => a.displayName.localeCompare(b.displayName, 'pt') || a.participantId.localeCompare(b.participantId)
+  const byViews = [...clippers].sort((a, b) => b.totalViews - a.totalViews || tieBreak(a, b))
+  const officialPositions = new Map(byViews.map((row, i) => [row.participantId, i + 1]))
+  const rows = sort === 'media' ? [...clippers].sort((a, b) => b.avgViews - a.avgViews || b.totalViews - a.totalViews || tieBreak(a, b)) : byViews
+  const podium = byViews.slice(0, 3)
+  const tableBody = useRankingFlip(`${periodKey}|${rows.map(row => row.participantId).join(',')}`)
   const rewardPool = rewards.filter(r => r.amount_cents != null).reduce((sum, r) => sum + (r.amount_cents ?? 0), 0)
-  const podiumHeadline = rewardPool > 0 ? `${money(rewardPool, rewards.find(r => r.amount_cents != null)?.currency ?? 'EUR')} em prémios` : `${compactNumber(podium.reduce((sum, row) => sum + row.totalViews, 0))} views no pódio`
+  // Quantias ocultas chegam sem valor (amount_hidden): o total também fica por revelar.
+  const hiddenPool = rewards.some(r => r.amount_hidden)
+  const podiumHeadline = rewardPool > 0 || hiddenPool
+    ? <><PrizeAmount blur={lb.blur_rewards || hiddenPool}>{money(rewardPool, rewards.find(r => r.amount_cents != null)?.currency ?? 'EUR')}</PrizeAmount> em prémios</>
+    : `${compactNumber(podium.reduce((sum, row) => sum + row.totalViews, 0))} views no pódio`
 
   const href = (period: string, order: string) => {
     const params = new URLSearchParams()
@@ -135,15 +191,37 @@ export function StreamerLeaderboard({ leaderboard: lb, creator, clippers, totals
     return `/${lb.slug}${params.size ? `?${params}` : ''}`
   }
 
+  /** Troca de separador com resposta imediata: só vai ao servidor se o período mudar. */
+  const go = (period: string, order: 'views' | 'media', tab: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    const target = href(period, order)
+    // "Maior média" é sempre calculada sobre o período atual (igual ao servidor).
+    const targetPeriod = order === 'media' ? currentPeriod : period
+    if (targetPeriod === periodKey || datasets?.[targetPeriod]) {
+      window.history.pushState(null, '', target)
+      return
+    }
+    startTransition(() => {
+      setShownTab(tab)
+      router.push(target, { scroll: false })
+    })
+  }
+
+  const joinHref = `/api/auth/tiktok/start?lb=${encodeURIComponent(lb.slug)}`
+  const prefetchClipper = (row: ClipperRow) => () => { loadClipperDetails(lb.slug, row.participantId, periodKey).catch(() => {}) }
+
   return <div className={styles.page} data-product-page>
     {!demo && <AutoRefresh seconds={60} />}
 
     <header className={styles.header}>
       <div className={styles.headerInner}>
-        <Link href={`/${lb.slug}`} className={styles.identity}>
-          <Portrait src={creator?.avatar_url ?? lb.cover_url} name={name} />
+        <div className={styles.identity}>
+          <Link href={`/${lb.slug}`} aria-label={name} className="inline-flex shrink-0">
+            <Portrait src={creator?.avatar_url ?? lb.cover_url} name={name} />
+          </Link>
           <div>
-            <strong>{name}</strong>
+            <Link href={`/${lb.slug}`}><strong>{name}</strong></Link>
             <span className={styles.identityPlatforms}>
               <svg role="img" aria-label="YouTube" className={styles.platformYoutube} viewBox="0 3.545 24 16.91">
                 <path fill="#fc0034" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
@@ -154,17 +232,20 @@ export function StreamerLeaderboard({ leaderboard: lb, creator, clippers, totals
               </span>
             </span>
           </div>
-        </Link>
+        </div>
         <div className={styles.headerActions}>
-          {isActive && <Link className={styles.primaryButton} href={`/join/${lb.slug}`}>Participar</Link>}
+          {isActive && <a className={styles.primaryButton} href={joinHref}>Participar</a>}
+          {isOwner && <button type="button" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog" aria-label="Definições" title="Definições" className={styles.settingsLink}>
+            <Settings size={18} strokeWidth={1.5} aria-hidden="true" />
+          </button>}
         </div>
       </div>
     </header>
 
     <main className={styles.main}>
       <h1 className={styles.srOnly}>{lb.name} · {name}</h1>
-      {lb.event_at && <section className={summary.timerSection} aria-label="Próxima live">
-        <EventClock target={lb.event_at} />
+      {lb.ends_at && <section className={summary.timerSection} aria-label="Fim da competição">
+        <CompetitionClock target={lb.ends_at} />
       </section>}
 
       <section className={summary.stats} aria-label="Estatísticas da competição">
@@ -183,26 +264,26 @@ export function StreamerLeaderboard({ leaderboard: lb, creator, clippers, totals
         <h2 id="ranking-title" className={styles.srOnly}>Classificação dos Clippers</h2>
         <div className={ranking.tableToolbar}>
           <nav className={ranking.tabs} aria-label="Ordenação do ranking">
-            <Link href={href(currentPeriod, 'views')} scroll={false} aria-current={!isHistory && sort === 'views' ? 'page' : undefined}>{periods.length > 1 ? 'Este mês' : 'Mais views'}</Link>
-            <Link href={href(currentPeriod, 'media')} scroll={false} aria-current={sort === 'media' ? 'page' : undefined}>Maior média</Link>
-            {periods.length > 1 && <Link href={href(ALL_TIME, 'views')} scroll={false} aria-current={isHistory && sort === 'views' ? 'page' : undefined}>De sempre</Link>}
+            <Link href={href(currentPeriod, 'views')} onClick={go(currentPeriod, 'views', 'views')} scroll={false} aria-current={shownTab === 'views' ? 'page' : undefined}>{periods.length > 1 ? 'Este mês' : 'Mais views'}</Link>
+            <Link href={href(currentPeriod, 'media')} onClick={go(currentPeriod, 'media', 'media')} scroll={false} aria-current={shownTab === 'media' ? 'page' : undefined}>Maior média</Link>
+            {periods.length > 1 && <Link href={href(ALL_TIME, 'views')} onClick={go(ALL_TIME, 'views', 'history')} scroll={false} aria-current={shownTab === 'history' ? 'page' : undefined}>De sempre</Link>}
           </nav>
         </div>
         </div>
 
-        {podium.length > 0 && <div key={`podium-${periodKey}-${sort}`} className={`${ranking.podiumRow} ${ranking.rankingTransition}`} aria-label={isHistory ? 'Pódio de sempre' : 'Pódio do mês'}>
+        {podium.length > 0 && <div key={`podium-${periodKey}`} className={ranking.podiumRow} style={isPending ? { opacity: .55, transition: 'opacity 150ms' } : undefined} aria-label={isHistory ? 'Pódio de sempre' : 'Pódio do mês'}>
           <div className={ranking.podiumStage}>
             {[podium[1], podium[0], podium[2]].filter(Boolean).map(row => {
               const index = podium.indexOf(row)
               const reward = rewards.find(r => r.position === index + 1)
-              const prizeText = reward?.amount_cents != null ? money(reward.amount_cents, reward.currency ?? 'EUR') : reward?.label ?? null
-              return <button type="button" onClick={() => setSelectedClipper(row)} aria-label={`Ver perfil de ${row.displayName}`} aria-haspopup="dialog" key={row.participantId} className={`${ranking.podiumColumn} ${ranking[`podiumPlace${index + 1}`]}`}>
+              const prizeText = reward?.amount_cents != null ? money(reward.amount_cents, reward.currency ?? 'EUR') : reward?.amount_hidden ? '' : reward?.label ?? null
+              return <button type="button" onClick={() => setSelectedClipper(row)} onPointerEnter={prefetchClipper(row)} onFocus={prefetchClipper(row)} aria-label={`Ver perfil de ${row.displayName}`} aria-haspopup="dialog" key={row.participantId} className={`${ranking.podiumColumn} ${ranking[`podiumPlace${index + 1}`]}`}>
                 <span className={ranking.podiumRing}>
                   
                   <Portrait src={row.avatarUrl} name={row.displayName} className={ranking.podiumPortrait} />
                 </span>
                 <strong>{row.displayName}</strong>
-                <span className={ranking.podiumPill}><Gift size={10} />{prizeText ?? compactNumber(row.totalViews)}</span>
+                <span className={ranking.podiumPill}><Gift size={10} /><PrizeAmount blur={reward?.amount_hidden || (lb.blur_rewards && reward?.amount_cents != null)}>{prizeText ?? compactNumber(row.totalViews)}</PrizeAmount></span>
                 <span className={ranking.podiumBlock}>
                   <PodiumSurface place={index + 1} />
                   <Laurel className={ranking.podiumWreath} />
@@ -218,20 +299,20 @@ export function StreamerLeaderboard({ leaderboard: lb, creator, clippers, totals
           </div>
         </div>}
 
-        <div key={`table-${periodKey}-${sort}`} className={`${ranking.tableScroll} ${ranking.rankingTransition}`} tabIndex={0} role="region" aria-label="Estatísticas dos clippers">
+        <div className={ranking.tableScroll} style={isPending ? { opacity: .55, transition: 'opacity 150ms' } : undefined} aria-busy={isPending} tabIndex={0} role="region" aria-label="Estatísticas dos clippers">
           <table className={ranking.table} data-sort={sort}>
             <thead><tr>
               <th scope="col">Rank</th><th scope="col">Clipper</th>
-              <th scope="col" aria-sort={sort === 'views' ? 'descending' : 'none'}><Link href={href(periodKey, 'views')} scroll={false}>{periodKey === ALL_TIME ? 'Views totais' : 'Views no mês'}</Link></th>
-              <th scope="col" aria-sort={sort === 'media' ? 'descending' : 'none'}><Link href={href(currentPeriod, 'media')} scroll={false}>Média / TikTok</Link></th>
+              <th scope="col" aria-sort={sort === 'views' ? 'descending' : 'none'}><Link href={href(periodKey, 'views')} onClick={go(periodKey, 'views', isHistory ? 'history' : 'views')} scroll={false}>{periodKey === ALL_TIME ? 'Views totais' : 'Views no mês'}</Link></th>
+              <th scope="col" aria-sort={sort === 'media' ? 'descending' : 'none'}><Link href={href(currentPeriod, 'media')} onClick={go(currentPeriod, 'media', 'media')} scroll={false}>Média / TikTok</Link></th>
               <th scope="col">Likes</th><th scope="col">Seguidores</th><th scope="col">Clips</th><th scope="col">Prémios</th>
             </tr></thead>
-            <tbody>{rows.map(row => {
-              const position = rows.indexOf(row) + 1
-              const officialPosition = [...clippers].sort((a, b) => b.totalViews - a.totalViews).findIndex(c => c.participantId === row.participantId) + 1
+            <tbody ref={tableBody}>{rows.map((row, i) => {
+              const position = i + 1
+              const officialPosition = officialPositions.get(row.participantId) ?? 0
               const reward = !isHistory ? rewards.find(r => r.position === officialPosition) : undefined
-              const prize = reward?.amount_cents != null ? money(reward.amount_cents, reward.currency ?? 'EUR') : reward?.label
-              return <tr key={row.participantId} className={ranking.clipperRow} onClick={() => setSelectedClipper(row)}>
+              const prize = reward?.amount_cents != null ? money(reward.amount_cents, reward.currency ?? 'EUR') : reward?.amount_hidden ? '' : reward?.label
+              return <tr key={row.participantId} data-id={row.participantId} className={ranking.clipperRow} onClick={() => setSelectedClipper(row)} onPointerEnter={prefetchClipper(row)} onFocus={prefetchClipper(row)}>
                 <td><span className={`${ranking.position} ${position <= 3 ? ranking[`rank${position}`] : ''}`}>{position <= 3 && <Laurel className={ranking.positionWreath} />}<span className={ranking.positionNumber}>{position}</span></span></td>
                 <td><button type="button" className={ranking.clipperCell} aria-haspopup="dialog" title={`Ver perfil de ${row.displayName}`}><Portrait src={row.avatarUrl} name={row.displayName} /><strong>{row.displayName}</strong></button></td>
                 <td className={ranking.viewsCell}>{compactNumber(row.totalViews)}</td>
@@ -239,31 +320,33 @@ export function StreamerLeaderboard({ leaderboard: lb, creator, clippers, totals
                 <td className={ranking.viewsCell}>{compactNumber(row.totalLikes)}</td>
                 <td className={ranking.viewsCell}>{row.followerCount == null ? '—' : compactNumber(row.followerCount)}</td>
                 <td className={ranking.viewsCell}>{fullNumber(row.videoCount)}</td>
-                <td className={ranking.prizeCell} title={prize ?? undefined}>{prize ?? '—'}</td>
+                <td className={ranking.prizeCell} title={reward?.amount_hidden || (lb.blur_rewards && reward?.amount_cents != null) ? undefined : prize ?? undefined}><PrizeAmount blur={reward?.amount_hidden || (lb.blur_rewards && reward?.amount_cents != null)}>{prize ?? '—'}</PrizeAmount></td>
               </tr>
             })}</tbody>
           </table>
         </div>
-        {rows.length === 0 && <div className={styles.empty}><Users size={24} /><h3>A corrida começa contigo</h3><p>Ainda não há participantes nesta competição.</p>{isActive && <Link className={styles.primaryButton} href={`/join/${lb.slug}`}>Participar</Link>}</div>}
+        {rows.length === 0 && <div className={styles.empty}><Users size={24} /><h3>A corrida começa contigo</h3><p>Ainda não há participantes nesta competição.</p>{isActive && <a className={styles.primaryButton} href={joinHref}>Participar</a>}</div>}
         </div>
       </section>
 
-      <LivesView demo={demo} initialLives={lives} timezone={lb.timezone} />
+      <LivesView demo={demo} initialLives={lives} timezone={lb.timezone} clips={clips} />
 
-      <footer className={styles.footer}><Link href="/"><BrandLogo /></Link><span>A comunidade cria. Os números contam.</span><div>{demo ? <span>Demonstração</span> : <span><ShieldCheck size={13} /> Ranking da comunidade</span>}<Link href="/legal/privacidade">Privacidade <ArrowUpRight size={12} /></Link></div></footer>
+      <footer className={styles.siteFooter}>
+        <p className={styles.siteFooterNote}>{demo ? 'Página de demonstração · ' : ''}<Link href="/">© {new Date().getFullYear()} farmerrr</Link></p>
+      </footer>
     </main>
 
-    <dialog ref={rulesDialog} className={`${styles.dialog} ${styles.rulesDialog}`} aria-labelledby="rules-title" onClose={() => setRulesOpen(false)} onClick={e => { if (e.target === e.currentTarget) rulesDialog.current?.close() }}>
-      <div className={styles.dialogHeader}><h2 id="rules-title">Como funciona</h2><button className={styles.iconButton} onClick={() => rulesDialog.current?.close()} aria-label="Fechar regras"><X size={18} /></button></div>
-      <div className={styles.rulesContent}>
+    {rulesOpen && <SettingsDrawer title="Como funciona" closeLabel="Fechar regras" onClose={() => setRulesOpen(false)}>
+      <div className={styles.rulesContent} style={{ marginTop: 0 }}>
         <p>Conecta a tua conta de TikTok.</p>
-        <p>Publica clips originais das streams de Luís Ferreira.</p>
+        <p>Publica clips originais das streams de {name}.</p>
         <p>Mantém os vídeos públicos para entrarem na contagem.</p>
         <p>Os clips publicados durante o mês entram automaticamente no ranking.</p>
         <p>Views compradas, conteúdo duplicado ou vídeos fora do tema podem levar à desqualificação.</p>
         <p>No final do mês, consulta a classificação final e, caso tenhas direito a prémio, recebe-o de acordo com as condições definidas.</p>
       </div>
-    </dialog>
+    </SettingsDrawer>}
     {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)} />}
+    {settingsOpen && <SettingsDrawer onClose={() => setSettingsOpen(false)}>{settingsContent}</SettingsDrawer>}
   </div>
 }

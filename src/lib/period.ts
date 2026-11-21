@@ -1,6 +1,8 @@
 import type { PeriodMode } from '@/lib/db/types'
 
 export const ALL_TIME = 'all'
+// Separate from SQL's legacy 'all', which represents competition dates.
+export const HISTORY_PERIOD = 'history'
 
 type PeriodSource = { period_mode: PeriodMode; timezone: string }
 
@@ -99,7 +101,7 @@ export function periodBounds(
   const competitionTo = lb.ends_at ? new Date(lb.ends_at) : new Date()
 
   if (periodKey === ALL_TIME) {
-    return { from: competitionFrom, to: competitionTo }
+    return { from: new Date(0), to: new Date() }
   }
 
   const tz = lb.timezone || 'Europe/Lisbon'

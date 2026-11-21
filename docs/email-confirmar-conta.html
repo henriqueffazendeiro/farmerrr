@@ -1,0 +1,90 @@
+<!--
+  Template do email "Confirm signup" do Supabase Auth.
+  Cola isto em: Supabase Dashboard > Authentication > Emails > Confirm signup.
+  Assunto sugerido: Confirma a tua conta farmerrr
+
+  Variáveis disponíveis: {{ .ConfirmationURL }} {{ .Email }} {{ .SiteURL }}
+  {{ .Token }} {{ .TokenHash }} e os metadados em {{ .Data.display_name }}.
+
+  Escrito em tabelas com estilos inline de propósito: é o que os clientes de
+  email entendem. Nada de CSS externo, nada de flexbox, nada de grid.
+-->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background-color:#08080a;">
+  <tr>
+    <td align="center" style="padding:40px 16px;">
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background-color:#0e0e11;border:1px solid #222227;border-radius:16px;">
+
+        <!-- Logo: exportado do próprio site (componente Wordmark, tamanho lg) para
+             PNG a 3x. Imagem em vez de HTML porque nenhum cliente de email
+             reproduz flexbox, unidades em e webfonts de forma fiável.
+             Para o regerar: ver docs/email-confirmar-conta.md -->
+        <tr>
+          <td align="center" style="padding:36px 32px 0;">
+            <img src="https://farmerrr.pt/email-logo.png" width="111" height="36" alt="farmerrr"
+                 style="display:block;margin:0 auto;width:111px;height:36px;border:0;outline:none;text-decoration:none;font-family:'Inter',-apple-system,'Segoe UI',Arial,sans-serif;font-size:24px;font-weight:600;color:#ededef;">
+          </td>
+        </tr>
+
+        <!-- Título -->
+        <tr>
+          <td align="center" style="padding:28px 32px 0;">
+            <h1 style="margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:19px;line-height:1.4;font-weight:600;letter-spacing:-0.01em;color:#ededef;">
+              Confirma o teu email
+            </h1>
+            <p style="margin:10px 0 0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.7;color:#9a9aa3;">
+              Carrega no botão para ativares a tua conta.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Botão -->
+        <tr>
+          <td align="center" style="padding:28px 32px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" style="background-color:#f49400;border-radius:6px;">
+                  <a href="{{ .ConfirmationURL }}"
+                     style="display:inline-block;padding:14px 32px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:15px;font-weight:600;color:#08080a;text-decoration:none;">
+                    Confirmar conta
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Link em texto, para quando o botão não passa -->
+        <tr>
+          <td align="center" style="padding:24px 32px 0;">
+            <p style="margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.6;color:#61616b;">
+              Se o botão não funcionar, copia este endereço:
+            </p>
+            <p style="margin:6px 0 0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.6;word-break:break-all;">
+              <a href="{{ .ConfirmationURL }}" style="color:#fac980;text-decoration:underline;">{{ .ConfirmationURL }}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Rodapé -->
+        <tr>
+          <td style="padding:28px 32px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td style="border-top:1px solid #222227;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+            <p style="margin:20px 0 0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#61616b;text-align:center;">
+              Não foste tu que criaste esta conta? Ignora este email — sem a confirmação, nada acontece.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+
+      <p style="margin:20px 0 0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:11px;color:#61616b;">
+        farmerrr
+      </p>
+
+    </td>
+  </tr>
+</table>

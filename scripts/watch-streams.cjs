@@ -8,7 +8,7 @@ async function tick() {
   try {
     const response = await fetch(new URL('/api/cron/streams', appUrl), {
       headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
-      signal: AbortSignal.timeout(55_000),
+      signal: AbortSignal.timeout(125_000),
     });
     if (!response.ok) console.error(`Verificacao de lives: HTTP ${response.status}.`);
     else {

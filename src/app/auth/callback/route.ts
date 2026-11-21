@@ -1,17 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-/** Destino do link de confirmação de email do Supabase. */
+/** Destino do link de confirmação de email e do login com Google (Supabase Auth). */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const requested = searchParams.get('next') ?? '/dashboard'
+  // "//site.com" também começa por "/" — sem isto seria um redirect para fora do site.
+  const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/dashboard'
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next.startsWith('/') ? next : '/dashboard'}`)
+      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 

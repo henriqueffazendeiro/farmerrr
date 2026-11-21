@@ -6,14 +6,7 @@ import { serverEnv } from '@/lib/config/env'
 import { tiktokProvider } from '@/lib/providers/tiktok'
 import { mockProvider } from '@/lib/providers/mock'
 
-/**
- * Escolhe a implementação a usar.
- *
- * SOCIAL_PROVIDER=mock  → dados simulados (por omissão, para desenvolver)
- * SOCIAL_PROVIDER=tiktok → API oficial
- *
- * O modo real exige credenciais. Contas simuladas só existem em desenvolvimento.
- */
+/** API oficial em produção; mock apenas para desenvolvimento explícito. */
 export function getProvider(id: SocialProviderId = 'tiktok'): SocialProvider {
   if (id !== 'tiktok') {
     throw new Error(`Plataforma ainda não suportada: ${id}`)

@@ -116,6 +116,7 @@ insert into public.reserved_slugs (slug) values
 -- ─── leaderboards ──────────────────────────────────────────────────────────
 
 create table public.leaderboards (
+  blur_rewards    boolean not null default false,
   id               uuid primary key default gen_random_uuid(),
   creator_id       uuid not null references public.creators (id) on delete cascade,
 

@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
+  verification: {
+    google: 'VARWrJzusArtX5X_JXhmNAfglOo2tc54pKdrQbXnov0',
+  },
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   title: {
     default: 'farmerrr — Repercute. Recebe. Reage.',
@@ -21,10 +24,10 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children, panel }: { children: React.ReactNode; panel: React.ReactNode }) {
   return (
     <html lang="pt-PT">
-      <body className="min-h-dvh antialiased">{children}</body>
+      <body className="min-h-dvh antialiased">{children}{panel}</body>
     </html>
   )
 }

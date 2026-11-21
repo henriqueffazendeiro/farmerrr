@@ -38,7 +38,7 @@ export default async function JoinSuccessPage({
   return (
     <div className="relative grid min-h-dvh place-items-center px-5 py-10">
       <main className="w-full max-w-[400px] text-center">
-        <AutoRefresh seconds={30} />
+        <AutoRefresh seconds={5} />
         {isMockMode() && <p className="mb-5 text-sm text-gold">Conta de demonstração — dados simulados.</p>}
         <CheckCircle2 className="mx-auto h-10 w-10 text-accent" strokeWidth={1.6} />
 
@@ -72,11 +72,11 @@ export default async function JoinSuccessPage({
           </div>
         )}
 
-        {!member.account?.last_synced_at && <p className="mt-5 text-sm text-fg-muted">A tua participação está criada. Estamos a aguardar a primeira importação dos vídeos; esta página atualiza automaticamente.</p>}
+        {!member.account?.last_synced_at && <p className="mt-5 text-sm text-fg-muted">A tua conta está confirmada e a primeira recolha já foi iniciada. Os vídeos aparecem assim que terminar; esta página atualiza automaticamente.</p>}
         {member.account?.last_synced_at && me && me.videoCount === 0 && (
           <p className="mt-5 text-sm leading-relaxed text-fg-muted">
-            Ainda não encontrámos clips teus dentro do período da competição. Os próximos
-            vídeos que publicares entram automaticamente — não tens de fazer mais nada.
+            Ainda não encontrámos clips teus neste período. Escolhe “Desde sempre” no
+            leaderboard para consultar os vídeos antigos já importados.
           </p>
         )}
 
@@ -96,8 +96,7 @@ export default async function JoinSuccessPage({
         </div>
 
         <p className="mt-8 text-xs leading-relaxed text-fg-subtle">
-          A partir de agora acompanhamos os teus clips automaticamente. Podes desligar a
-          ligação nas definições do TikTok quando quiseres.
+          A partir de agora acompanhamos os teus clips públicos automaticamente.
         </p>
       </main>
     </div>

@@ -60,6 +60,7 @@ export type Leaderboard = {
   platforms: SocialProviderId[]
   required_keyword: string | null
   is_public: boolean
+  blur_rewards?: boolean
   created_at: string
   updated_at: string
 }
@@ -84,6 +85,7 @@ export type LeaderboardParticipant = {
 
 export type SocialAccount = {
   last_discovered_at: string | null
+  discovery_cursor: string | null
   sync_locked_until: string
   id: string
   clipper_profile_id: string
@@ -194,6 +196,16 @@ export type Reward = {
   amount_cents: number | null
   currency: string | null
   created_at: string
+  /** Só na leitura pública: há quantia, mas o streamer ocultou-a (amount_cents vem a null). */
+  amount_hidden?: boolean
+}
+
+export type LiveRating = {
+  live_id: string
+  voter_hash: string
+  score: number
+  created_at: string
+  updated_at: string
 }
 
 export type Subscription = {
@@ -236,6 +248,7 @@ export type Database = {
     Tables: {
       stream_connections: Table<StreamConnection, 'creator_id' | 'platform' | 'channel_id' | 'channel_name' | 'channel_url' | 'access_token_enc' | 'expires_at'>
       creator_lives: Table<CreatorLive, 'creator_id' | 'platform' | 'channel_id' | 'external_id' | 'title' | 'started_at' | 'watch_url'>
+      live_ratings: Table<LiveRating, 'live_id' | 'voter_hash' | 'score'>
       monthly_recaps: Table<MonthlyRecap, 'leaderboard_id' | 'period_key' | 'snapshot'>
       profiles: Table<Profile, 'id'>
       creators: Table<Creator, 'owner_id' | 'name' | 'handle'>
@@ -263,8 +276,17 @@ export type Database = {
         Row: SocialAccountPublic
         Relationships: []
       }
+      live_rating_stats: {
+        Row: { live_id: string; average: number; count: number }
+        Relationships: []
+      }
+      rewards_public: {
+        Row: Reward & { amount_hidden: boolean }
+        Relationships: []
+      }
     }
     Functions: {
+      consume_public_tracking_attempt: { Args: { p_key: string }; Returns: boolean }
       generate_monthly_recaps: { Args: Record<string, never>; Returns: number }
       recompute_leaderboard: {
         Args: { p_leaderboard_id: string }

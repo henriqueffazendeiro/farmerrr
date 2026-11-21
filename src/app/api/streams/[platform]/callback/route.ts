@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { publicEnv } from '@/lib/config/env'
 import { getCurrentUser } from '@/lib/supabase/server'
@@ -14,7 +15,10 @@ const stateSchema = z.object({ state: z.string(), verifier: z.string(), userId: 
 export async function GET(request: Request, { params }: { params: Promise<{ platform: string }> }) {
   const { platform } = await params
   if (!isStreamPlatform(platform)) return new NextResponse('Plataforma inválida', { status: 404 })
-  const done = (status: string) => NextResponse.redirect(new URL(`/dashboard/conta?streams=${status}`, publicEnv.NEXT_PUBLIC_APP_URL))
+  const done = (status: string) => {
+    revalidatePath('/dashboard', 'layout')
+    return NextResponse.redirect(new URL(`/dashboard/conta?streams=${status}`, publicEnv.NEXT_PUBLIC_APP_URL))
+  }
   const jar = await cookies()
   const cookie = jar.get(`farmerrr_stream_${platform}`)?.value
   jar.set(`farmerrr_stream_${platform}`, '', { path: `/api/streams/${platform}`, maxAge: 0 })
@@ -41,7 +45,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ plat
       expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(), status: 'connected', last_error: null,
     }, { onConflict: 'creator_id,platform' }).select('id').single()
     if (error) return done(error.code === '23505' ? 'claimed' : 'error')
-    try { await syncStreamConnection(data.id) } catch { return done('sync_pending') }
+    try {
+      const result = await syncStreamConnection(data.id)
+      if ('skipped' in result) return done('sync_pending')
+    } catch { return done('sync_pending') }
     return done('connected')
   } catch { return done('error') }
 }

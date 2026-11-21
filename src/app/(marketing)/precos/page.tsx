@@ -4,7 +4,7 @@ import { Container } from '@/components/ui/container'
 
 export const metadata: Metadata = {
   title: 'Preços',
-  description: 'Um plano só, sem limites de clippers. 25 € por mês, 30 dias grátis.',
+  description: 'Um plano só, sem limites de clippers. 25 € por mês, 14 dias grátis.',
 }
 
 export default function PricingPage() {

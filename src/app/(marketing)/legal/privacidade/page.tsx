@@ -1,69 +1,186 @@
 import type { Metadata } from 'next'
-import { LegalPage } from '@/components/marketing/legal-page'
+import Link from 'next/link'
+import { LegalPage, LegalTable, groupSections, type LegalSection } from '@/components/marketing/legal-page'
+import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
   title: 'Política de Privacidade',
-  description: 'Que dados o Farmerrr recolhe, porquê, e como os podes apagar.',
+  description: 'Tratamento de dados pessoais no farmerrr.',
+  alternates: { canonical: '/legal/privacidade' },
 }
 
-export default function PrivacyPage() {
-  return (
-    <LegalPage title="Política de Privacidade" updatedAt="setembro de 2026">
-      <p>
-        O Farmerrr ajuda streamers a acompanhar as visualizações dos clips que a sua comunidade
-        publica. Esta página explica, sem rodeios, que dados recolhemos e o que fazemos com eles.
-      </p>
+const privacy = <a href={`mailto:${LEGAL.privacyEmail}`}>{LEGAL.privacyEmail}</a>
 
-      <h2>Que dados recolhemos</h2>
-      <p>
-        <strong>Do streamer:</strong> email, nome de apresentação e a informação das competições
-        que cria (nome, datas, regras, prémios, logo).
-      </p>
-      <p>
-        <strong>Do clipper:</strong> quando liga a conta de TikTok, recolhemos através da API
-        oficial o identificador da conta (<em>open&nbsp;id</em>), o nome de utilizador, o nome de
-        apresentação e a fotografia de perfil. Recolhemos também, para cada vídeo público
-        publicado durante a competição: identificador, ligação, miniatura, legenda, data de
-        publicação, duração e o número de visualizações, gostos, comentários e partilhas.
-      </p>
-
-      <h2>O que não fazemos</h2>
+const sections: LegalSection[] = [
+  {
+    id: 'responsavel',
+    title: 'Responsável pelo tratamento',
+    content: <p>
+      {LEGAL.entity}, NIF {LEGAL.taxId}, {LEGAL.address}. Contacto para questões de privacidade: {privacy}.
+    </p>,
+  },
+  {
+    id: 'dados',
+    title: 'Dados tratados',
+    content: <>
+      <h4>Streamers</h4>
+      <LegalTable head={['Categoria', 'Dados', 'Origem']} rows={[
+        ['Conta', 'Email, nome de apresentação; nome e fotografia da conta Google, se usada para entrar', 'Utilizador / Google'],
+        ['Autenticação', 'Password, guardada apenas em formato hash', 'Utilizador'],
+        ['Página', 'Nome, endereço, imagem de perfil, regras, datas e prémios da competição', 'Utilizador'],
+        ['Canais', 'URL, identificador e nome dos canais Twitch, YouTube ou Kick; título, miniatura e horário das lives públicas', 'Utilizador / Plataformas'],
+        ['Programa para computador', 'Nome do dispositivo e credencial do dispositivo (cifrada)', 'Utilizador'],
+      ]} />
+      <h4>Clippers</h4>
+      <LegalTable head={['Categoria', 'Dados', 'Origem']} rows={[
+        ['Perfil TikTok', 'open_id, nome de utilizador, nome de apresentação, fotografia, ligação ao perfil, seguidores, gostos e número de vídeos', 'TikTok'],
+        ['Vídeos', 'Identificador, ligação, miniatura, legenda, data, duração, visualizações, gostos, comentários e partilhas de vídeos públicos', 'TikTok'],
+        ['Participação', 'Competições, posição no ranking e estado da participação', 'Serviço'],
+        ['Recap', 'Vídeo enviado pelo vencedor mensal', 'Utilizador'],
+      ]} />
+      <h4>Visitantes</h4>
+      <p>Endereço IP, tipo de navegador e registos de pedidos, tratados pelo fornecedor de alojamento.</p>
+    </>,
+  },
+  {
+    id: 'finalidades',
+    title: 'Finalidades e fundamentos',
+    content: <LegalTable head={['Finalidade', 'Fundamento (RGPD, art. 6.º, n.º 1)']} rows={[
+      ['Gestão de contas, páginas e competições', 'Execução de contrato — al. b)'],
+      ['Ligação ao TikTok e contagem de métricas', 'Execução de contrato — al. b)'],
+      ['Apresentação pública de rankings, vídeos e Recaps', 'Execução de contrato — al. b)'],
+      ['Apresentação das lives do Streamer', 'Execução de contrato — al. b)'],
+      ['Faturação e obrigações fiscais', 'Obrigação legal — al. c)'],
+      ['Segurança e prevenção de fraude', 'Interesse legítimo — al. f)'],
+      ['Apoio e comunicações sobre o Serviço', 'Execução de contrato e interesse legítimo — als. b) e f)'],
+    ]} />,
+  },
+  {
+    id: 'autorizacoes',
+    title: 'Autorizações nas Plataformas',
+    content: <>
+      <p>Apenas são pedidas autorizações de leitura:</p>
       <ul>
-        <li>Não publicamos, editamos nem apagamos conteúdo em nome de ninguém.</li>
-        <li>Não acedemos a mensagens privadas nem a vídeos privados.</li>
-        <li>Não vendemos dados a terceiros nem os usamos para publicidade.</li>
-        <li>Não recolhemos dados através de <em>scraping</em>: usamos apenas a API oficial.</li>
+        <li>TikTok: <code>user.info.basic</code>, <code>user.info.profile</code>, <code>user.info.stats</code>, <code>video.list</code>.</li>
+        <li>Google (login): email, nome e fotografia de perfil.</li>
+        <li>YouTube, Twitch, Kick: dados do canal e estado das lives.</li>
       </ul>
-
-      <h2>Autorizações pedidas ao TikTok</h2>
       <p>
-        Pedimos duas autorizações: <strong>user.info.basic</strong>, para saber quem é a conta que
-        se ligou, e <strong>video.list</strong>, para ler a lista de vídeos públicos e as
-        respetivas métricas. Nada mais.
+        O {LEGAL.brand} não publica, edita nem apaga conteúdo, e não acede a mensagens ou vídeos privados. As
+        autorizações podem ser revogadas nas definições de cada Plataforma.
       </p>
-
-      <h2>Durante quanto tempo guardamos</h2>
+    </>,
+  },
+  {
+    id: 'publico',
+    title: 'Dados públicos',
+    content: <>
+      <p>As páginas de competição são públicas e mostram:</p>
+      <ul>
+        <li>nome, imagem e lives públicas do Streamer;</li>
+        <li>nome de utilizador, fotografia, vídeos públicos e métricas dos Clippers;</li>
+        <li>Recaps mensais, incluindo o vídeo do vencedor.</li>
+      </ul>
+      <p>Emails, tokens de acesso e restantes dados de conta não são publicados.</p>
+    </>,
+  },
+  {
+    id: 'subcontratantes',
+    title: 'Subcontratantes',
+    content: <>
+      <p>Os dados não são vendidos. São partilhados apenas com os seguintes fornecedores:</p>
+      <LegalTable head={['Fornecedor', 'Função']} rows={[
+        ['Supabase', 'Base de dados, autenticação e armazenamento'],
+        ['Vercel', 'Alojamento'],
+        ['Google', 'Login com Google e API do YouTube'],
+        ['TikTok, Twitch, Kick', 'Dados das contas e canais ligados'],
+        ['Prestador de pagamentos', 'Processamento de subscrições'],
+      ]} />
+      <p>Os dados podem ser comunicados às autoridades quando exigido por lei.</p>
+    </>,
+  },
+  {
+    id: 'transferencias',
+    title: 'Transferências internacionais',
+    content: <p>
+      Quando há tratamento fora do Espaço Económico Europeu, aplicam-se as garantias do RGPD: decisões de adequação
+      (incluindo o EU-U.S. Data Privacy Framework) ou cláusulas contratuais-tipo.
+    </p>,
+  },
+  {
+    id: 'conservacao',
+    title: 'Conservação',
+    content: <LegalTable head={['Dados', 'Prazo']} rows={[
+      ['Conta de Streamer', 'Enquanto a conta estiver ativa; até 30 dias após pedido de eliminação'],
+      ['Tokens de acesso do TikTok', 'Eliminados ao desligar a conta'],
+      ['Restantes dados do Clipper', 'Até 30 dias após desligar a conta'],
+      ['Métricas e rankings', 'Enquanto a competição existir'],
+      ['Faturação', '10 anos (obrigação fiscal)'],
+      ['Registos técnicos', 'Prazo definido pelo fornecedor de alojamento'],
+    ]} />,
+  },
+  {
+    id: 'seguranca',
+    title: 'Segurança',
+    content: <ul>
+      <li>Comunicações cifradas (HTTPS).</li>
+      <li>Tokens de acesso guardados cifrados e usados apenas no servidor.</li>
+      <li>Passwords guardadas apenas em formato hash.</li>
+      <li>Acesso aos dados restringido por regras na base de dados.</li>
+    </ul>,
+  },
+  {
+    id: 'cookies',
+    title: 'Cookies',
+    content: <>
+      <p>São usados apenas cookies estritamente necessários. Não são usados cookies de análise nem de publicidade.</p>
+      <LegalTable head={['Nome', 'Finalidade', 'Duração']} rows={[
+        [<code key="sb">sb-*</code>, 'Sessão do Streamer', 'Até terminar sessão'],
+        [<code key="clipper">farmerrr_clipper</code>, 'Sessão do Clipper', '7 dias'],
+        [<code key="stream">farmerrr_stream_*</code>, 'Proteção da ligação de canais', '10 minutos'],
+        [<code key="notice">onboarding-notice</code>, 'Aviso no fim da configuração (sessionStorage)', 'Até fechar o separador'],
+      ]} />
+    </>,
+  },
+  {
+    id: 'direitos',
+    title: 'Direitos dos titulares',
+    content: <>
       <p>
-        As métricas dos vídeos são guardadas enquanto a competição existir, mais o histórico
-        necessário para mostrar a evolução do ranking. Se apagares a tua ligação, apagamos os
-        tokens de acesso de imediato e os dados associados no prazo de 30 dias.
+        Acesso, retificação, apagamento, limitação, oposição, portabilidade e retirada de autorização. Os pedidos são
+        enviados para {privacy} e respondidos no prazo de um mês.
       </p>
-
-      <h2>Como desligar a tua conta</h2>
       <p>
-        Podes revogar o acesso a qualquer momento nas definições da tua conta de TikTok, ou
-        pedir-nos a remoção por email. Podes também remover a autorização a partir da tua página
-        de clipper.
+        Reclamações podem ser apresentadas à <a href="https://www.cnpd.pt" target="_blank" rel="noreferrer">Comissão Nacional de Proteção de Dados</a>.
       </p>
+    </>,
+  },
+  {
+    id: 'menores',
+    title: 'Menores',
+    content: <p>
+      Contas de Streamer: 18 anos ou mais. Clippers: idade mínima do TikTok; menores de 18 anos necessitam de
+      autorização dos representantes legais.
+    </p>,
+  },
+  {
+    id: 'alteracoes',
+    title: 'Alterações',
+    content: <p>
+      Alterações relevantes são comunicadas por email ou no Serviço antes de entrarem em vigor. Ver também os{' '}
+      <Link href="/legal/termos">Termos de Serviço</Link>.
+    </p>,
+  },
+]
 
-      <h2>Os teus direitos</h2>
-      <p>
-        Ao abrigo do RGPD, tens direito a aceder, corrigir, exportar e apagar os teus dados
-        pessoais. Basta pedir por email e respondemos no prazo legal.
-      </p>
+const groups = groupSections(sections, [
+  { title: 'Geral', icon: 'book', items: ['responsavel'] },
+  { title: 'Dados pessoais', icon: 'database', items: ['dados', 'finalidades', 'autorizacoes', 'publico'] },
+  { title: 'Partilha e conservação', icon: 'share', items: ['subcontratantes', 'transferencias', 'conservacao'] },
+  { title: 'Segurança', icon: 'shield', items: ['seguranca', 'cookies'] },
+  { title: 'Direitos', icon: 'scale', items: ['direitos', 'menores', 'alteracoes'] },
+])
 
-      <h2>Contacto</h2>
-      <p>Para qualquer questão sobre privacidade: privacidade@farmerrr.app</p>
-    </LegalPage>
-  )
+export default function PrivacyPage() {
+  return <LegalPage title="Política de Privacidade" groups={groups} />
 }

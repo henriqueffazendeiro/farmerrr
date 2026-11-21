@@ -1,0 +1,43 @@
+.wizard { position: relative; display: flex; flex-direction: column; width: 100%; min-width: 0; margin: 0 auto; }
+.progress { display: flex; gap: 3px; margin-top: 24px; border-radius: 4px; overflow: hidden; }
+.track { height: 4px; flex: 1; background: var(--color-surface-3); border-radius: 1px; overflow: hidden; }
+.fill { height: 100%; width: 100%; transform-origin: left; background: #a1a1aa; border-radius: inherit; }
+.body { display: flex; flex: 1; flex-direction: column; padding-top: clamp(28px, 4vw, 48px); padding-bottom: 32px; }
+.form { display: flex; flex: 1; flex-direction: column; }
+.fields { display: flex; flex: 1; flex-direction: column; justify-content: center; padding-block: 32px; }
+.title { font-size: clamp(28px, 4vw, 40px); line-height: 1.2; font-weight: 600; letter-spacing: -.035em; }
+.description { margin-top: 12px; margin-bottom: 30px; font-size: 14px; line-height: 1.6; color: var(--color-fg-muted); }
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
+.option { display: flex; align-items: center; gap: 16px; width: 100%; min-width: 0; min-height: 120px; text-align: left; padding: 23px; border-radius: 8px; background: var(--color-surface-2); border: 2px solid transparent; cursor: pointer; transition: background 160ms, border-color 160ms; }
+.option:hover { background: var(--color-surface-3); }
+.option[aria-pressed=true] { border-color: #fff; background: var(--color-surface-3); }
+.option > svg { flex-shrink: 0; color: var(--color-fg-muted); }
+.option > span:nth-child(2) { flex: 1; }
+.option strong { display: block; font-size: 16px; font-weight: 500; }
+.option small { display: block; font-size: 14px; line-height: 1.6; color: var(--color-fg-muted); margin-top: 5px; }
+.dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 20px; }
+.dates > * { min-width: 0; }
+.rewardPanel { width: 100%; }
+.reward { min-width: 0; }
+.rewards { display: grid; gap: 12px; max-height: 36dvh; overflow-y: auto; padding: 2px; }
+.reward input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+.reward input[type=number]::-webkit-inner-spin-button,
+.reward input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.footer { display: flex; align-items: center; justify-content: space-between; padding-top: 24px; gap: 20px; }
+.actions { display: flex; align-items: center; gap: 8px; }
+.accountField > label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.accountField > input { border: 0; }
+.back { display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border-radius: 6px; font-size: 13px; color: var(--color-fg-muted); cursor: pointer; transition: background 160ms, color 160ms; }
+.back:hover:not(:disabled) { color: var(--color-fg); background: var(--color-surface-3); }
+.back:focus-visible { color: var(--color-fg); background: var(--color-surface-3); outline: 2px solid var(--color-fg-subtle); outline-offset: 2px; }
+.back:disabled { opacity: .5; cursor: wait; }
+.error { margin-top: 16px; font-size: 13px; color: var(--color-danger); }
+.celebration { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 18px; background: var(--color-surface-2); color: var(--color-accent); margin-bottom: 24px; }
+.done { display: grid; gap: 24px; }
+.enter { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 14px 20px; border-radius: 6px; background: var(--color-accent); color: var(--color-canvas); font-size: 14px; font-weight: 600; }
+@media (min-width: 768px) and (min-height: 760px) {
+  /* The header is 64px tall with a 1px border. Centre on the viewport. */
+  .fields { position: absolute; top: calc(50dvh - 65px); left: 0; right: 0; transform: translateY(-50%); padding-block: 0; }
+  .footer { margin-top: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .option, .back { transition: none; } }

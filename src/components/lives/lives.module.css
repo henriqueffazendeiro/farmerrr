@@ -27,10 +27,12 @@
 .section .title { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 32px; margin: 0 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .section .date { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
 .section .date::first-letter { text-transform: uppercase; }
+.section .voting { margin: 16px 0 8px; }
+.section .voteError { margin: 8px 0 0; font-size: 12px; color: #f87171; }
 .section .rateLabel { font-size: 13px; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; }
 .section .rateLabel strong { color: var(--text); font-weight: 600; }
 .section .rateLabel button { background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: 13px; padding: 0; }
-.section .rate { display: flex; gap: 2px; margin-left: -3px; }
+.section .rate { display: flex; gap: 2px; margin-left: -3px; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 .section .rate button { background: none; border: 0; padding: 3px; line-height: 0; color: var(--faint); transition: transform .12s ease, color .12s ease; }
 .section .rate button svg { width: 26px; height: 26px; display: block; }
 .section .rate button path { fill: transparent; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; transition: fill .12s ease; }

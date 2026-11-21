@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
-import { periodBounds } from '@/lib/period'
+import { ALL_TIME, HISTORY_PERIOD, periodBounds } from '@/lib/period'
 import type {
   ClipperProfile,
   Leaderboard,
@@ -86,7 +86,7 @@ export async function getClippers(
       .from('leaderboard_entries')
       .select('*')
       .eq('leaderboard_id', leaderboardId)
-      .eq('period_key', periodKey),
+      .eq('period_key', periodKey === ALL_TIME ? HISTORY_PERIOD : periodKey),
   ])
 
   const profileById = new Map<string, ClipperProfile>((profiles ?? []).map((p) => [p.id, p]))
@@ -130,6 +130,13 @@ export async function getClippers(
     }
   })
 
+  if (periodKey === ALL_TIME) {
+    rows.sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1)
+      || b.totalViews - a.totalViews || b.videoCount - a.videoCount || a.participantId.localeCompare(b.participantId))
+    let rank = 0
+    for (const row of rows) row.rank = row.status === 'active' ? ++rank : null
+    return rows
+  }
   return rows.sort((a, b) => {
     if (a.status !== b.status) return a.status === 'active' ? -1 : 1
     if (a.rank != null && b.rank != null) return a.rank - b.rank
@@ -163,6 +170,13 @@ export async function getVideos(
 
   if (participantId) participantQuery = participantQuery.eq('id', participantId)
 
+  // As exclusões não dependem de mais nada: pedem-se logo, em paralelo.
+  const exclusionsPromise = supabase
+    .from('video_exclusions')
+    .select('video_id')
+    .eq('leaderboard_id', leaderboard.id)
+    .then((result) => result)
+
   const { data: participants } = await participantQuery
   if (!participants || participants.length === 0) return []
 
@@ -193,10 +207,7 @@ export async function getVideos(
 
   if (!videos || videos.length === 0) return []
 
-  const { data: exclusions } = await supabase
-    .from('video_exclusions')
-    .select('video_id')
-    .eq('leaderboard_id', leaderboard.id)
+  const { data: exclusions } = await exclusionsPromise
 
   const excludedIds = new Set((exclusions ?? []).map((x) => x.video_id))
 

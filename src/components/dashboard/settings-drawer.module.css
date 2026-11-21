@@ -1,0 +1,80 @@
+.drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  width: 30vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  overflow: hidden;
+  transform: translateX(0);
+}
+
+.drawer[open] {
+  animation: enter 240ms cubic-bezier(0.2, 0.65, 0.3, 1) both;
+}
+
+.drawer::backdrop {
+  background: rgb(0 0 0 / 32%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: backdrop-enter 240ms cubic-bezier(0.2, 0.65, 0.3, 1) both;
+}
+
+.drawer:has(dialog[open])::backdrop {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.drawer[data-closing='true'] {
+  animation: leave 160ms ease-in forwards;
+}
+
+.drawer[data-closing='true']::backdrop {
+  animation: backdrop-leave 160ms ease-in forwards;
+}
+
+.content {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  padding: 40px 32px 128px;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes enter {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes leave {
+  to { transform: translateX(100%); }
+}
+
+@keyframes backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes backdrop-leave {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (max-width: 639px) {
+  .drawer { width: 100%; }
+  .content { padding: 28px 20px 128px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer[open], .drawer::backdrop { animation: none; }
+}

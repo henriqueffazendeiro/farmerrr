@@ -1,5 +1,5 @@
 import { BarChart3, CircleCheck, CreditCard, LoaderCircle, PiggyBank, Sparkles } from 'lucide-react'
-import { ButtonLink } from '@/components/ui/button'
+import { Button, ButtonLink } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const MONTHLY_FEATURES = [
@@ -30,6 +30,7 @@ const ANNUAL_FEATURES = [
 
 const PLANS = [
   {
+    id: 'monthly',
     name: 'Plano mensal',
     description: 'Perfeito para começar',
     price: '25 €',
@@ -45,6 +46,7 @@ const PLANS = [
     },
   },
   {
+    id: 'yearly',
     name: 'Plano anual',
     description: 'Para fazeres disto parte da tua stream',
     price: '200 €',
@@ -60,9 +62,13 @@ const PLANS = [
   },
 ] as const
 
-export function PricingCards() {
+/**
+ * Cartões de preços. Na página inicial o botão leva ao registo; na página de subscrição
+ * (`checkout`) cada cartão é um formulário que abre o Checkout do Stripe com o plano escolhido.
+ */
+export function PricingCards({ checkout, className }: { checkout?: { action: (form: FormData) => Promise<void>; next: string; label: string }; className?: string } = {}) {
   return (
-    <div className="mx-auto mt-14 grid max-w-4xl items-stretch gap-6 lg:grid-cols-2">
+    <div className={cn('mx-auto mt-14 grid max-w-4xl items-stretch gap-6 lg:grid-cols-2', className)}>
       {PLANS.map((plan) => (
         <article
           key={plan.name}
@@ -107,23 +113,31 @@ export function PricingCards() {
             />
             <span className="font-medium text-fg">{plan.extra.label}</span>
             {'badge' in plan.extra ? (
-              <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xs border border-[#a6cc94] bg-[#dcf7cd] px-2 py-0.5 text-[11px] font-[300] text-[#6f995d]">
+              <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xs bg-[#dcf7cd] px-2 pt-[5px] pb-[3px] text-[11px] leading-none font-[300] text-[#6f995d]">
                 {plan.extra.badge}
-                <LoaderCircle aria-hidden="true" className="h-3 w-3 motion-safe:animate-spin [animation-duration:1.5s]" />
+                <LoaderCircle aria-hidden="true" className="relative -top-px h-3 w-3 motion-safe:[animation:spin_2s_linear_infinite]" />
               </span>
             ) : null}
           </div>
 
           <div className="border-t border-line" />
 
-          <ButtonLink
-            href="/registar"
-            size="lg"
-            variant={plan.buttonVariant}
-            className="mt-6 w-full"
-          >
-            Começar
-          </ButtonLink>
+          {checkout ? (
+            <form action={checkout.action} className="mt-6">
+              <input type="hidden" name="plan" value={plan.id} />
+              <input type="hidden" name="next" value={checkout.next} />
+              <Button type="submit" size="lg" variant={plan.buttonVariant} className="w-full">{checkout.label}</Button>
+            </form>
+          ) : (
+            <ButtonLink
+              href="/entrar?seguinte=/dashboard/novo"
+              size="lg"
+              variant={plan.buttonVariant}
+              className="mt-6 w-full"
+            >
+              Começar
+            </ButtonLink>
+          )}
         </article>
       ))}
     </div>

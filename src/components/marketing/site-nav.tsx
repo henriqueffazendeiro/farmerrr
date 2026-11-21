@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/ui/brand-logo'
-import { ButtonLink } from '@/components/ui/button'
+import { AuthNavButton } from './auth-nav-button'
 import { Container } from '@/components/ui/container'
 
-const SOCIAL_LINKS = [
+export const SOCIAL_LINKS = [
   { href: 'https://x.com/farmerrr', label: 'Twitter' },
   { href: 'https://discord.gg/farmerrr', label: 'Discord' },
 ] as const
@@ -28,9 +28,7 @@ export function SiteNav() {
               {link.label}
             </Link>
           ))}
-          <ButtonLink href="/registar" size="sm">
-            Começar
-          </ButtonLink>
+          <AuthNavButton />
         </nav>
       </Container>
     </header>

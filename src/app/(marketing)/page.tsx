@@ -15,12 +15,12 @@ export default function LandingPage() {
         <BackdropWordmark />
 
         <Container className="relative text-center">
-          <p className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface/70 px-2.5 py-1 text-[9px] font-medium tracking-[0.12em] text-fg-muted uppercase sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-[11px] sm:tracking-[0.16em]">
-            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+          <p className="inline-flex items-center gap-2 rounded-sm border border-line bg-surface/70 px-3.5 py-1.5 text-[11px] font-medium tracking-[0.14em] text-fg-muted uppercase sm:px-3.5 sm:py-1.5 sm:text-[11px] sm:tracking-[0.16em]">
+            <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-50" />
               <span className="relative inline-flex h-full w-full rounded-full bg-accent" />
             </span>
-            Construindo em comunidade
+            A construir em comunidade
           </p>
 
           {/* "Repercute. Recebe." lado a lado; o remate — "Reage." — leva a cor. */}
@@ -35,16 +35,16 @@ export default function LandingPage() {
           </p>
 
           <div className="mt-7 flex h-12 w-full items-stretch justify-center gap-2 sm:mt-10 sm:gap-3">
-            <ButtonLink href="/registar" size="lg" className="box-border h-full min-w-0 flex-1 border border-transparent bg-clip-padding px-3 text-xs sm:flex-none sm:px-6 sm:text-base">
+            <ButtonLink href="/entrar?seguinte=/dashboard/novo" size="lg" className="box-border h-full min-w-0 flex-1 border border-transparent bg-clip-padding px-3 text-base sm:flex-none sm:px-6">
               Começar
             </ButtonLink>
-            <ButtonLink href="#como-funciona" size="lg" variant="secondary" className="box-border h-full min-w-0 flex-1 px-3 text-xs sm:flex-none sm:px-6 sm:text-base">
+            <ButtonLink href="#como-funciona" size="lg" variant="secondary" className="box-border h-full min-w-0 flex-1 px-3 text-base sm:flex-none sm:px-6">
               Como funciona
             </ButtonLink>
           </div>
 
           <p className="mt-5 text-sm text-fg-subtle">
-            30 dias grátis · cancelas quando quiseres
+            14 dias grátis · cancelas quando quiseres
           </p>
         </Container>
       </section>

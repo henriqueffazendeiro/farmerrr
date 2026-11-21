@@ -4,12 +4,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { syncAccount } from '@/lib/sync/account'
 import { ProviderError } from '@/lib/providers/types'
 import type { SyncJob } from '@/lib/db/types'
+import { isMockMode } from '@/lib/providers/registry'
 
 const MAX_ATTEMPTS = 5
 
-/** Espera crescente entre tentativas: 2, 4, 8, 16 minutos. */
+/** Espera crescente entre tentativas: 15, 30, 60, 120 minutos. */
 function backoffMinutes(attempts: number): number {
-  return Math.min(2 ** attempts, 16)
+  return Math.min(15 * 2 ** (attempts - 1), 240)
 }
 
 /** Reclama trabalhos pendentes e marca-os como em execução. */
@@ -133,7 +134,7 @@ export async function scheduleJobs(): Promise<ScheduleReport> {
 
   const { data: accounts } = await admin
     .from('social_accounts')
-    .select('id, last_discovered_at')
+    .select('id, provider_user_id, discovery_cursor, last_discovered_at')
     .eq('status', 'connected')
     .in('clipper_profile_id', profileIds)
 
@@ -143,11 +144,18 @@ export async function scheduleJobs(): Promise<ScheduleReport> {
   let enqueued = 0
 
   for (const account of accounts) {
+    if (/^(public|apify):/.test(account.provider_user_id)) continue
+    if (account.provider_user_id.startsWith('mock-') !== isMockMode()) continue
+    const { data: failed, error: failedError } = await admin.from('sync_jobs').select('id')
+      .eq('social_account_id', account.id).eq('status', 'error')
+      .gte('finished_at', new Date(now - 6 * 3_600_000).toISOString()).limit(1)
+    if (failedError) throw failedError
+    if (failed?.length) continue
     const last = account.last_discovered_at ? new Date(account.last_discovered_at).getTime() : 0
     const minutesSince = (now - last) / 60_000
 
     // Descoberta de clips novos: de 30 em 30 minutos.
-    if (minutesSince >= 30) {
+    if (account.discovery_cursor || minutesSince >= 30) {
       const { data } = await admin.rpc('enqueue_sync_job', {
         p_social_account_id: account.id,
         p_kind: 'discover',

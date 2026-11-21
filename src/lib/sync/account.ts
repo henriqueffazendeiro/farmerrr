@@ -8,6 +8,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getProvider, isMockMode } from '@/lib/providers/registry'
 import { markNeedsReauth, usableTokens } from '@/lib/sync/tokens'
 import { persistThumbnail } from '@/lib/sync/thumbnails'
+import { tiktokProvider } from '@/lib/providers/tiktok'
+import { recomputeHistoryForAccount } from '@/lib/sync/history'
 
 type Admin = SupabaseClient<Database>
 
@@ -177,18 +179,20 @@ async function discover(
   provider: SocialProvider,
   account: SocialAccount,
   tokens: Awaited<ReturnType<typeof usableTokens>>,
-): Promise<{ discovered: number; refreshed: number }> {
+): Promise<{ discovered: number; refreshed: number; cursor: string | null }> {
   const collected: ProviderVideo[] = []
-  let cursor: string | null = null
+  let cursor: string | null = account.discovery_cursor ?? null
 
-  for (let page = 0; page < MAX_DISCOVER_PAGES; page++) {
+  const maxPages = MAX_DISCOVER_PAGES
+  for (let page = 0; page < maxPages; page++) {
     const result = await provider.listVideos(tokens, { cursor, max: 20 })
     collected.push(...result.videos)
-    cursor = result.cursor
-    if (!result.hasMore || !cursor) break
+    cursor = result.hasMore ? result.cursor : null
+    if (!result.hasMore) break
+    if (!cursor) throw new ProviderError('Paginação incompleta do TikTok.', 'unknown')
   }
 
-  if (collected.length === 0) return { discovered: 0, refreshed: 0 }
+  if (collected.length === 0) return { discovered: 0, refreshed: 0, cursor }
 
   const ids = collected.map((v) => v.providerVideoId)
   const { data: existing } = await admin
@@ -203,7 +207,7 @@ async function discover(
   const discovered = await insertNewVideos(admin, account, fresh)
   const refreshed = await updateMetrics(admin, known, collected)
 
-  return { discovered, refreshed }
+  return { discovered, refreshed, cursor }
 }
 
 async function refreshMetrics(
@@ -217,8 +221,8 @@ async function refreshMetrics(
     .select('*')
     .eq('social_account_id', account.id)
     .eq('is_deleted', false)
-    .order('published_at', { ascending: false })
-    .limit(400)
+    .order('metrics_updated_at', { ascending: true, nullsFirst: true })
+    .limit(1000)
 
   const due = (videos ?? []).filter((v) => needsRefresh(v)).slice(0, MAX_REFRESH_VIDEOS)
   if (due.length === 0) return { refreshed: 0, removed: 0 }
@@ -274,9 +278,14 @@ async function runAccountSync(
   if (account.status === 'revoked') return { discovered: 0, refreshed: 0, removed: 0 }
   if (account.provider_user_id.startsWith('mock-') !== isMockMode()) throw new Error('A conta pertence a outro modo de integração.')
 
-  const provider = getProvider(account.provider)
+  if (/^(public|apify):/.test(account.provider_user_id)) {
+    await markNeedsReauth(admin, accountId)
+    throw new ProviderError('Esta conta precisa de entrar com o TikTok para autorizar a API oficial.', 'auth')
+  }
+  const provider = account.provider_user_id.startsWith('mock-') ? getProvider(account.provider) : tiktokProvider
 
   let result: SyncResult = { discovered: 0, refreshed: 0, removed: 0 }
+  let nextCursor: string | null = account.discovery_cursor ?? null
 
   try {
     const tokens = await usableTokens(admin, provider, account)
@@ -290,7 +299,8 @@ async function runAccountSync(
       // 'discover' faz também o perfil: é uma chamada barata e mantém os
       // seguidores atualizados sem um job dedicado.
       await syncProfile(admin, provider, account, tokens)
-      const { discovered, refreshed } = await discover(admin, provider, account, tokens)
+      const { discovered, refreshed, cursor } = await discover(admin, provider, account, tokens)
+      nextCursor = cursor
       result = { discovered, refreshed, removed: 0 }
     }
   } catch (error) {
@@ -300,14 +310,18 @@ async function runAccountSync(
     throw error
   }
 
-  const { error: syncError } = await admin
-    .from('social_accounts')
-    .update({ last_synced_at: new Date().toISOString(), ...(kind === 'discover' ? { last_discovered_at: new Date().toISOString() } : {}) })
-    .eq('id', accountId)
-  if (syncError) throw syncError
-
   const { error: rankError } = await admin.rpc('recompute_for_account', { p_social_account_id: accountId })
   if (rankError) throw rankError
+  await recomputeHistoryForAccount(admin, accountId)
+
+  const { error: syncError } = await admin
+    .from('social_accounts')
+    .update({ last_synced_at: new Date().toISOString(), ...(kind === 'discover' ? {
+      discovery_cursor: nextCursor,
+      ...(nextCursor ? {} : { last_discovered_at: new Date().toISOString() }),
+    } : {}) })
+    .eq('id', accountId)
+  if (syncError) throw syncError
 
   return result
 }

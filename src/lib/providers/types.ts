@@ -1,6 +1,7 @@
 import type { SocialProviderId } from '@/lib/db/types'
 
 export type ProviderTokens = {
+  username?: string | null
   providerUserId: string
   accessToken: string
   refreshToken: string | null

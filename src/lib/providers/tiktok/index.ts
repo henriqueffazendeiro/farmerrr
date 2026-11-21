@@ -76,6 +76,10 @@ type RawVideo = {
 }
 
 function mapVideo(raw: RawVideo): ProviderVideo {
+  if ([raw.view_count, raw.like_count, raw.comment_count, raw.share_count]
+    .some(value => typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)) {
+    throw new ProviderError('Métricas incompletas na resposta do TikTok.', 'unknown')
+  }
   if (!raw.id || !Number.isFinite(raw.create_time) || (raw.create_time ?? 0) <= 0) {
     throw new ProviderError('Vídeo inválido na resposta do TikTok.', 'unknown')
   }
@@ -124,7 +128,14 @@ async function tokenRequest(body: Record<string, string>): Promise<ProviderToken
   })
 
   const text = await response.text()
-  if (!response.ok) fail(response.status, text)
+  if (!response.ok) {
+    let code: string | undefined
+    try { code = JSON.parse(text).error } catch { /* handled by fail below */ }
+    if (code === 'invalid_grant' || code === 'access_denied') {
+      throw new ProviderError('A autorização do TikTok expirou. Volta a ligar a conta.', 'auth', response.status)
+    }
+    fail(response.status, 'Falha no pedido de autorização.')
+  }
 
   const json = JSON.parse(text) as {
     access_token?: string
@@ -137,7 +148,7 @@ async function tokenRequest(body: Record<string, string>): Promise<ProviderToken
     error_description?: string
   }
 
-  if (json.error || !json.access_token) {
+  if (json.error || !json.access_token || !json.open_id) {
     throw new ProviderError(
       json.error_description ?? json.error ?? 'Resposta inesperada do TikTok.',
       'auth',
@@ -209,7 +220,8 @@ export const tiktokProvider: SocialProvider = {
 
   isConfigured() {
     const env = serverEnv()
-    return Boolean(env.TIKTOK_CLIENT_KEY && env.TIKTOK_CLIENT_SECRET)
+    return Boolean(env.TIKTOK_CLIENT_KEY?.trim() && env.TIKTOK_CLIENT_SECRET?.trim()
+      && redirectUri().startsWith('https://'))
   },
 
   getAuthUrl(state) {
@@ -237,9 +249,14 @@ export const tiktokProvider: SocialProvider = {
   },
 
   async getAccount(tokens) {
+    const fields = USER_FIELDS.split(',').filter(field => {
+      if (['username', 'profile_deep_link'].includes(field)) return tokens.scopes.includes('user.info.profile')
+      if (['follower_count', 'following_count', 'likes_count', 'video_count'].includes(field)) return tokens.scopes.includes('user.info.stats')
+      return true
+    }).join(',')
     const data = await apiRequest<{ user: Record<string, unknown> }>(
       tokens,
-      `/user/info/?fields=${USER_FIELDS}`,
+      `/user/info/?fields=${fields}`,
       { method: 'GET' },
     )
 
@@ -275,6 +292,10 @@ export const tiktokProvider: SocialProvider = {
     }>(tokens, `/video/list/?fields=${VIDEO_FIELDS}`, { method: 'POST', body })
 
     if (!Array.isArray(data?.videos) || typeof data.has_more !== 'boolean') throw new ProviderError('Lista de vídeos incompleta.', 'unknown')
+    if (data.has_more && (!Number.isSafeInteger(data.cursor) || (data.cursor ?? 0) <= 0
+      || (options.cursor && (data.cursor ?? 0) >= Number(options.cursor)))) {
+      throw new ProviderError('Paginação inválida na resposta do TikTok.', 'unknown')
+    }
 
     return {
       videos: (data?.videos ?? []).map(mapVideo),
@@ -293,6 +314,7 @@ export const tiktokProvider: SocialProvider = {
     )
 
     if (!Array.isArray(data?.videos)) throw new ProviderError('Métricas de vídeos incompletas.', 'unknown')
+    if (data.videos.some(video => !ids.includes(video.id))) throw new ProviderError('O TikTok devolveu vídeos que não foram pedidos.', 'unknown')
     return data.videos.map(mapVideo)
   },
 }

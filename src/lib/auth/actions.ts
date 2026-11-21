@@ -14,8 +14,8 @@ const credentials = z.object({
 })
 
 const signUpSchema = credentials.extend({
-  displayName: z.string().trim().min(2, 'Diz-nos como te chamas.').max(60),
-})
+  passwordConfirm: z.string(),
+}).refine((data) => data.password === data.passwordConfirm, { message: 'As passwords não coincidem.' })
 
 /** Traduz os erros mais comuns do Supabase Auth. */
 function translate(message: string): string {
@@ -54,19 +54,24 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   const parsed = signUpSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
-    displayName: formData.get('displayName'),
+    passwordConfirm: formData.get('passwordConfirm'),
   })
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
+
+  const next = String(formData.get('next') || '/dashboard')
+  const destination = next.startsWith('/') ? next : '/dashboard'
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: { display_name: parsed.data.displayName },
-      emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      // Sem nome no registo: o trigger handle_new_user usa a parte do email antes do @.
+      // O destino viaja no link do email para o separador que o abre também
+      // acabar no sítio certo.
+      emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/callback?next=${encodeURIComponent(destination)}`,
     },
   })
   if (error) return { error: translate(error.message) }
@@ -74,12 +79,12 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   // Com a confirmação de email ativa no Supabase, ainda não há sessão.
   if (!data.session) {
     return {
-      notice: 'Enviámos-te um email para confirmares a conta. Abre-o e volta aqui.',
+      notice: 'Enviámos-te um email para confirmares a conta. Abre o link que lá está.',
     }
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect(destination)
 }
 
 export async function signOutAction() {

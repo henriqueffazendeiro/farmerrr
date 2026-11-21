@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/db/types'
@@ -34,10 +35,11 @@ export async function createClient() {
 }
 
 /** Utilizador autenticado, ou null. */
-export async function getCurrentUser() {
+// Deduplicate verification within a render only; never share sessions across requests.
+export const getCurrentUser = cache(async function getCurrentUser() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   return user
-}
+})

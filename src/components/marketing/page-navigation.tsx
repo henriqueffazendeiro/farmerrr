@@ -30,6 +30,10 @@ export function PageNavigation({ children }: { children: ReactNode }) {
     if (!link || link.hasAttribute('download')) return
     const url = new URL(link.href, window.location.href)
     if (url.origin !== window.location.origin) return
+    // Registo, login e dashboard são navegação a sério: dentro de um iframe
+    // viria o site todo outra vez, barra de navegação incluída.
+    // Termos e Privacidade são documentos com URL próprio (a app review do TikTok verifica-os).
+    if (/^\/(registar|entrar|dashboard|legal)(\/|$)/.test(url.pathname)) return
     const sectionId = sections[url.pathname + url.hash] ?? sections[url.pathname] ?? (url.pathname === '/' ? url.hash.slice(1) : undefined)
     const destination = sectionId ? document.getElementById(sectionId) : null
     event.preventDefault()

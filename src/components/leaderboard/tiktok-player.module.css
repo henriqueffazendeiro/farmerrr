@@ -1,0 +1,53 @@
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 20px;
+  border: 0;
+  background: transparent;
+  color: var(--color-fg);
+}
+.dialog[open] { display: grid; place-items: center; }
+.dialog::backdrop {
+  background: rgb(0 0 0 / 32%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.content {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 12px;
+  width: min(472px, 100%, calc((100dvh - 40px) * 9 / 16 + 52px));
+  animation: enter 200ms ease-out both;
+}
+.videoFrame {
+  aspect-ratio: 9 / 16;
+  min-width: 0;
+  border-radius: var(--radius-ui);
+  background: var(--color-surface-2);
+}
+.player { display: block; width: 100%; height: 100%; border: 0; border-radius: inherit; }
+.controls { display: flex; flex-direction: column; justify-content: space-between; }
+.navigation { display: grid; gap: 10px; }
+.control {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-ui);
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+  cursor: pointer;
+}
+.control:hover:not(:disabled) { background: var(--color-surface-3); }
+.control:disabled { opacity: .3; cursor: default; }
+.control:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 3px; }
+.unavailable { padding: 24px; font-size: 14px; color: var(--color-fg-muted); }
+@keyframes enter { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .content { animation: none; } }

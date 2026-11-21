@@ -6,6 +6,8 @@ Leaderboards automáticos para os clippers de um streamer.
 O streamer cria a competição em minutos, partilha um link, e o ranking de views
 atualiza-se sozinho através da API oficial do TikTok.
 
+Login e recolha oficiais: [configuração TikTok](docs/clipper-tiktok.md).
+
 > Arquitetura completa, schema e wireframes: **[`ARQUITETURA.md`](./ARQUITETURA.md)**
 
 ---
@@ -118,7 +120,7 @@ decorativas: o TikTok exige URLs de Termos e Privacidade publicados e verificado
 domínio para aprovar a app em produção. O texto atual é um rascunho técnico e deve ser
 revisto por um jurista antes da submissão.
 
-**Sobre o TikTok.** Por omissão `SOCIAL_PROVIDER=mock`: o produto inteiro
+**Sobre o TikTok.** Com `SOCIAL_PROVIDER=mock` explícito em desenvolvimento, o produto inteiro
 funciona com contas e clips simulados, com as views a crescer em tempo real,
 sem precisar da app aprovada. Para ligar a API oficial ver a secção abaixo.
 

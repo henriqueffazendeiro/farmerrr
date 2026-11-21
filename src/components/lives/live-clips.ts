@@ -1,4 +1,5 @@
 export type LiveClip = {
+  providerVideoId?: string
   id: string
   liveDate: string
   title: string
@@ -14,6 +15,26 @@ export type LiveClip = {
   shares?: number
   url: string | null
 }
+
+/**
+ * Dia da live a que o clip pertence, lido da descrição: `#20/11` (também `#20-11`, `#20.11`, `#20_11`).
+ * O ano é o da publicação; se esse dia ainda estiver no futuro, é do ano anterior.
+ * `publishedOn` é a data local de publicação (AAAA-MM-DD). Devolve '' se não houver data válida.
+ */
+export function liveDateFromCaption(caption: string | null | undefined, publishedOn: string): string {
+  const match = caption?.match(/#(\d{1,2})[/\-._](\d{1,2})(?!\d)/)
+  if (!match) return ''
+  const day = Number(match[1]), month = Number(match[2])
+  if (month < 1 || month > 12 || day < 1) return ''
+  let year = Number(publishedOn.slice(0, 4))
+  const iso = (y: number) => `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  if (iso(year) > publishedOn) year -= 1
+  if (day > new Date(year, month, 0).getDate()) return ''
+  return iso(year)
+}
+
+/** Bónus na nota da live pelos clips associados: cresce cada vez mais devagar, no máximo +1,0 (15 clips). */
+export const clipBonus = (count: number) => Math.min(1, Math.log2(1 + Math.max(0, count)) / 4)
 
 export function topClipsForLive(clips: LiveClip[], liveDate: string, limit = 4): LiveClip[] {
   return clips.filter(clip => clip.liveDate === liveDate)

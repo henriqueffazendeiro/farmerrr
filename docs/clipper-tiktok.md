@@ -1,43 +1,71 @@
-# Participação dos clippers
+# TikTok oficial: Login Kit e Display API
 
-O convite `/join/<slug>` autoriza o TikTok e inscreve a conta nessa competição.
-A primeira importação entra na fila: a pessoa vê o ranking inicialmente a zero
-e pode acompanhar o estado em `/join/<slug>/conta`. A sessão assinada valida a
-participação no servidor; um ID no URL não concede acesso à área privada.
-Reautorizar a mesma conta mantém a participação. Participações desqualificadas
-não são reativadas pelo OAuth. A revogação faz-se nas aplicações ligadas do TikTok.
+O convite /join/<slug> abre **Entrar com TikTok**. O clipper autoriza a leitura
+do perfil e dos vídeos públicos no TikTok e regressa à competição. Não há
+inscrição por username, confirmação na bio, scraping ou serviço Python TikTok.
+O provider por omissão é tiktok; mock é apenas para desenvolvimento explícito.
 
 ## Ativar
 
-1. Executar `supabase/migrations/0009_clipper_sync.sql` no Supabase.
-2. Criar uma app em https://developers.tiktok.com/ e configurar Login Kit Web
-   e Display API. Começar com sandbox e adicionar as contas de teste.
-3. Configurar os scopes user.info.basic, user.info.profile, user.info.stats,
-   video.list. O clipper precisa de conceder video.list.
-4. Registar um callback HTTPS estático, por exemplo
-   https://DOMINIO/api/auth/tiktok/callback. Login Kit Web não aceita localhost HTTP.
-5. Preencher TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_REDIRECT_URI,
-   NEXT_PUBLIC_APP_URL e definir SOCIAL_PROVIDER=tiktok. Reiniciar o servidor.
-6. Ativar os agendadores existentes /api/cron/schedule e /api/cron/sync.
-   Localmente: `npm run clippers:watch`, mantendo `npm run dev` ativo.
+1. Aplicar as migrações pendentes, incluindo 0013_tiktok_official_only.sql.
+2. No TikTok Developers adicionar Login Kit Web e Display API. Pedir os scopes
+   user.info.basic, user.info.profile, user.info.stats e video.list. O utilizador
+   tem de conceder video.list. Os campos opcionais só são pedidos se autorizados.
+3. Registar exatamente https://DOMINIO/api/auth/tiktok/callback como redirect.
+   O login exige HTTPS, mesmo em sandbox.
+4. No alojamento configurar SOCIAL_PROVIDER=tiktok, NEXT_PUBLIC_APP_URL,
+   TIKTOK_REDIRECT_URI, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET,
+   TOKEN_ENCRYPTION_KEY, CLIPPER_SESSION_SECRET e CRON_SECRET.
+   Manter a chave de cifra existente. Nunca publicar segredos em NEXT_PUBLIC_*.
+   Remover TIKTOK_SCRAPER_* e os valores antigos SOCIAL_PROVIDER=scraper/apify.
+5. Testar com uma conta no sandbox e obter aprovação para produção dos produtos
+   e scopes, com site, termos, privacidade e demonstração exigidos pelo TikTok.
+6. Publicar e ativar um agendador **na cloud** para /api/cron/schedule e
+   /api/cron/sync?limit=1, com Authorization: Bearer CRON_SECRET.
+   Ver [agendamento externo](external-scheduler.md). Nenhum computador pessoal
+   precisa de ficar ligado. npm run clippers:watch é só uma alternativa local.
 
-SOCIAL_PROVIDER=mock é explicitamente apresentado como demonstração e não
-funciona em produção. O modo real nunca cai silenciosamente para contas falsas.
-As credenciais e os tokens ficam no servidor; a chave AES já existe em .env.local.
+Publicar o código não ativa sozinho o agendamento nem aprova a aplicação no
+TikTok. Não duplicar agendadores cloud com workers locais. O lote inicial de um
+job/minuto é conservador: medir a fila e dimensionar frequência, concorrência e
+recursos antes de suportar centenas de contas. Um agendador com timeout de 30 s
+pode precisar do modo background descrito no documento de agendamento.
 
-## Limites atuais
+## Recolha e limites
 
-- Descoberta dos 60 vídeos públicos mais recentes, de 30 em 30 minutos.
-  Não é uma importação completa do histórico de uma conta.
-- Métricas atualizadas conforme a idade do vídeo (1 h / 6 h / 24 h), sujeitas
-  à frequência e à capacidade do worker. Não são dados em tempo real.
-- O ranking aplica datas, plataforma, participação e exclusões do streamer.
-  Não identifica automaticamente se um vídeo é sobre o streamer. Atualmente
-  todos os vídeos elegíveis da conta contam, salvo exclusão manual.
-- A ligação automática entre um TikTok e uma live específica do Absolute Cinema
-  ainda não existe. A data de publicação não prova a live de origem.
-- A sessão da área privada representa a última competição autorizada.
-- Testes locais com respostas simuladas não validam a aprovação OAuth real.
+- Tokens cifrados no servidor, renovados pela validade devolvida pela API,
+  guardando o novo refresh token e verificando a identidade. Revogação ou
+  expiração exigem login; nunca há fallback para scraping.
+- Cada descoberta lê até três páginas de vinte vídeos e guarda o cursor depois
+  de persistir os dados e recalcular rankings. O agendador retoma as páginas
+  seguintes até completar o histórico público disponibilizado pela API.
+  O ciclo seguinte começa pelos vídeos recentes, após pelo menos 30 minutos.
+- Métricas elegíveis a cada 1 h / 6 h / 24 h conforme a idade. Os vídeos há mais
+  tempo sem atualização têm prioridade. Filas e quotas podem adiar a recolha.
+- Respostas incompletas não viram contagens zero. Erros 429 têm espera crescente;
+  erros de autorização pedem login. Após cinco falhas, a conta aguarda seis horas
+  antes de receber novos trabalhos.
+- Só há recolha para participantes ativos em competições ativas. As regras do
+  ranking aplicam datas, plataforma e exclusões, mas não identificam se o vídeo
+  é sobre o streamer nem a live de origem.
 
-Fontes: https://developers.tiktok.com/docs/en/login-kit-web e
-https://developers.tiktok.com/docs/en/display-api-overview.
+## Contas antigas
+
+A migração marca public:* e apify:* como needs_reauth e termina os seus jobs
+pendentes, preservando o histórico. O código também bloqueia a recolha destas
+contas antes da migração. O open_id oficial não é o antigo ID público.
+Um novo login cria uma identidade OAuth separada: não fundimos perfis pelo
+username, que pode mudar de dono. Participações históricas precisam de
+reconciliação verificada antes de anunciar continuidade ou limpar duplicados.
+
+## Verificação
+
+Executar npm run typecheck, npm run test:clippers e npm run test:streams.
+São testes com respostas simuladas. Ainda é necessário validar OAuth real,
+renovação, importação e agendamento com a aplicação aprovada ou em sandbox.
+
+Referências oficiais:
+- [Display API](https://developers.tiktok.com/docs/en/display-api-get-started)
+- [Paginação](https://developers.tiktok.com/docs/en/tiktok-api-v2-video-list)
+- [Tokens](https://developers.tiktok.com/docs/en/oauth-user-access-token-management)
+- [Limites](https://developers.tiktok.com/docs/en/tiktok-api-v2-rate-limit)

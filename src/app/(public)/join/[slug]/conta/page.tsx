@@ -35,7 +35,7 @@ export default async function ClipperAccount({ params, searchParams }: {
       {estado && notices[estado] && <p role="status" className="text-sm">{notices[estado]}</p>}
       {active && <div className="flex flex-wrap gap-3">
         {account?.status === 'connected' && <form action={requestClipperSync}><input type="hidden" name="slug" value={slug} /><Button type="submit" variant="secondary">Pedir atualização</Button></form>}
-        <a href={`/api/auth/tiktok/start?lb=${encodeURIComponent(slug)}`} className="rounded border border-line px-4 py-2">Voltar a ligar TikTok</a>
+        <a href={`/api/auth/tiktok/start?lb=${encodeURIComponent(slug)}`} className="rounded border border-line px-4 py-2">Autorizar TikTok</a>
       </div>}
     </div>
     <p className="mt-5 text-sm text-fg-muted">São contabilizados os vídeos públicos elegíveis para esta competição. As visualizações são atualizadas periodicamente.</p>

@@ -7,7 +7,7 @@
 .tabs:has(a:nth-child(3)) { --tab-count: 3; }
 .tabs:has(a:nth-child(2)[aria-current]) { --active-tab: 1; }
 .tabs:has(a:nth-child(3)[aria-current]) { --active-tab: 2; }
-.tabs::before { content: ''; position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--tab-count)); border: 1px solid #3f3f46; border-radius: var(--radius-ui); background: #27272a; box-shadow: 0 1px 5px #0003; transform: translateX(calc(var(--active-tab) * 100%)); transition: transform 440ms cubic-bezier(.4, 0, .2, 1); pointer-events: none; }
+.tabs::before { content: ''; position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--tab-count)); border-radius: var(--radius-ui); background: #27272a; box-shadow: 0 1px 5px #0003; transform: translateX(calc(var(--active-tab) * 100%)); transition: transform 440ms cubic-bezier(.4, 0, .2, 1); pointer-events: none; }
 .tabs a { flex: 1; min-width: 0; padding: 10px 6px; color: #919198; text-align: center; font-size: 14px; font-weight: 500; border: 1px solid transparent; border-radius: var(--radius-ui); transition: color 220ms ease; }
 .rankingTransition { animation: rankingReveal 380ms ease-in-out both; }
 @keyframes rankingReveal {
@@ -24,8 +24,8 @@
 .podiumStage { display: flex; align-items: flex-end; justify-content: center; isolation: isolate; padding-top: 12px; }
 .podiumColumn { position: relative; display: flex; flex-direction: column; align-items: center; width: 31%; max-width: 170px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: center; cursor: pointer; }
 .podiumColumn strong { max-width: 100%; padding: 0 3px; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; color: #ededf0; }
-.podiumRing { display: block; width: 62px; height: 62px; border-radius: 50%; border: 2px solid #a1a1aa; background: #242429; }
-.podiumRing .podiumPortrait { width: 100%; height: 100%; border: 0; }
+.podiumRing { display: flex; width: 62px; height: 62px; border-radius: var(--radius-ui); border: 2px solid #a1a1aa; background: #242429; overflow: hidden; }
+.podiumRing .podiumPortrait { width: 100%; height: 100%; border: 0; border-radius: 0; }
 .podiumPill { display: inline-flex; justify-content: center; align-items: center; gap: 5px; max-width: 95%; min-height: 21px; padding: 0 6px; margin-top: 5px; border: 1px solid #32a779; border-radius: var(--radius-ui); background: linear-gradient(180deg, #213b2f, #14241c); box-shadow: inset 0 1px 0 #a0ffd51a, 0 0 9px #00e99712; color: #fff; font-size: 14px; font-weight: 850; line-height: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 3; }
 .podiumPill svg { flex-shrink: 0; width: 14px; height: 14px; color: #00ef99; filter: drop-shadow(0 0 3px #00e99740); }
 .podiumBlock { --depth: 32px; position: relative; display: grid; place-items: start center; width: 100%; height: 115px; margin-top: 36px; padding-top: 17px; }
@@ -56,6 +56,10 @@
 .table td { height: 65px; padding: 10px 5px; border-top: 1px solid #27272a; font-variant-numeric: tabular-nums; }
 .table tbody tr:hover, .table tbody tr:focus-within { background: #27272a55; }
 .clipperRow, .clipperRow button { cursor: pointer; }
+/* Durante a troca de posições: quem sobe passa por cima de quem desce. */
+.table tbody tr[data-moving] { position: relative; background: var(--color-canvas); }
+.table tbody tr[data-moving="up"] { z-index: 2; }
+.table tbody tr[data-moving="down"] { z-index: 1; }
 .position { position: relative; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #303036; border-radius: 50%; color: #919198; }
 .positionNumber { position: relative; font-size: 13px; font-weight: 650; }
 .positionWreath { position: absolute; width: 40px; height: 34px; color: #52525b; }
@@ -74,7 +78,8 @@
   .section { padding-top: 26px; }
   .panel { padding: 18px 0 10px; }
   .tabs a { font-size: 12px; padding: 8px 3px; }
-  .tableToolbar { gap: 10px; }  .podiumRow { padding-top: 7px; padding-bottom: 25px; }
+  .tableToolbar { gap: 10px; }
+  .podiumRow { padding-top: 7px; padding-bottom: 25px; }
   .podiumColumn { width: 33.333%; }
   .podiumRing { width: 49px; height: 49px; }
   .podiumColumn strong { font-size: 10px; }
@@ -87,12 +92,16 @@
   .podiumNumber { font-size: 39px; }
   .podiumHeadline { gap: 7px; margin-top: -15px; }
   .podiumHeadline strong { font-size: 29px; }
+  /* Coluna do clipper com largura fixa: as métricas ficam logo a seguir ao nome
+     e cabem mais colunas no ecrã antes de ser preciso deslizar. */
+  .table { min-width: 0; width: 604px; }
   .table th { font-size: 8px; }
-  .table th:first-child { width: 37px; }
-  .table th:nth-child(n+3) { width: 90px; }
-  .table th:nth-child(4) { width: 110px; }
-  .table th:nth-child(7) { width: 55px; }
-  .table th:last-child { width: 73px; }
+  .table th:first-child { width: 34px; }
+  .table th:nth-child(2) { width: 124px; }
+  .table th:nth-child(n+3) { width: 76px; }
+  .table th:nth-child(4) { width: 92px; }
+  .table th:nth-child(7) { width: 50px; }
+  .table th:last-child { width: 76px; }
   .table td { height: 57px; padding: 8px 3px; font-size: 12px; }
   .position { width: 27px; height: 27px; }
   .positionWreath { width: 34px; height: 29px; }

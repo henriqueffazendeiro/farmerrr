@@ -4,10 +4,12 @@ import { redirect } from 'next/navigation'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { getMyCreator } from '@/lib/db/queries'
+import { getMyCreator, getMyLeaderboard, getOwnedLeaderboard } from '@/lib/db/queries'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify, validateSlug, slugProblemMessage } from '@/lib/slug'
+import { MAX_REWARD_POSITIONS, REWARD_POSITIONS } from './reward-positions'
 
-export type LeaderboardState = { error?: string }
+export type LeaderboardState = { error?: string; success?: boolean; slug?: string }
 
 const optionalText = z
   .string()
@@ -33,13 +35,11 @@ const schema = z.object({
   announcement: optionalText,
   startsAt: isoDate,
   endsAt: isoDate,
-  eventAt: isoDate,
-  periodMode: z.enum(['fixed', 'monthly']).default('monthly'),
   timezone: z.string().trim().min(1).max(60).default('Europe/Lisbon'),
 })
 
 const rewardSchema = z.object({
-  position: z.number().int().min(1).max(20),
+  position: z.number().int().min(1).max(MAX_REWARD_POSITIONS),
   label: z.string().trim().max(120).nullable(),
   amountCents: z.number().int().min(0).nullable(),
 })
@@ -48,7 +48,7 @@ const rewardSchema = z.object({
 function readRewards(formData: FormData) {
   const rewards: z.infer<typeof rewardSchema>[] = []
 
-  for (let position = 1; position <= 10; position++) {
+  for (const position of REWARD_POSITIONS) {
     const label = String(formData.get(`reward-${position}-label`) ?? '').trim()
     const rawAmount = String(formData.get(`reward-${position}-amount`) ?? '').trim()
 
@@ -71,10 +71,12 @@ export async function createLeaderboardAction(
 ): Promise<LeaderboardState> {
   const creator = await getMyCreator()
   if (!creator) redirect('/dashboard/inicio')
+  const existing = await getMyLeaderboard(creator.id)
+  if (existing) redirect(`/dashboard/l/${existing.id}/definicoes`)
 
   const parsed = schema.safeParse({
     name: formData.get('name'),
-    slug: slugify(String(formData.get('slug') ?? '') || creator.handle),
+    slug: slugify(String(formData.get('name') ?? '')),
     description: formData.get('description') ?? undefined,
     rules: formData.get('rules') ?? undefined,
     quote: formData.get('quote') ?? undefined,
@@ -82,8 +84,6 @@ export async function createLeaderboardAction(
     announcement: formData.get('announcement') ?? undefined,
     startsAt: formData.get('startsAt') ?? undefined,
     endsAt: formData.get('endsAt') ?? undefined,
-    eventAt: formData.get('eventAt') ?? undefined,
-    periodMode: formData.get('periodMode') ?? undefined,
     timezone: formData.get('timezone') ?? undefined,
   })
 
@@ -107,6 +107,7 @@ export async function createLeaderboardAction(
       creator_id: creator.id,
       name: parsed.data.name,
       slug: parsed.data.slug,
+      blur_rewards: formData.get('blurRewards') === 'true',
       description: parsed.data.description,
       rules: parsed.data.rules,
       quote: parsed.data.quote,
@@ -114,8 +115,8 @@ export async function createLeaderboardAction(
       announcement: parsed.data.announcement,
       starts_at: startsAt,
       ends_at: parsed.data.endsAt,
-      event_at: parsed.data.eventAt,
-      period_mode: parsed.data.periodMode,
+      event_at: null,
+      period_mode: 'monthly',
       timezone: parsed.data.timezone,
       status: 'active',
     })
@@ -124,7 +125,9 @@ export async function createLeaderboardAction(
 
   if (error || !leaderboard) {
     if (error?.code === '23505') {
-      return { error: `O endereço "${parsed.data.slug}" já está ocupado. Escolhe outro.` }
+      const existing = await getMyLeaderboard(creator.id)
+      if (existing) redirect(`/dashboard/l/${existing.id}/definicoes`)
+      return { error: `O endereço "${parsed.data.slug}" já está ocupado. Escolhe outro nome para a página.` }
     }
     if (error?.code === '23514') {
       return { error: error.message.replace(/^.*?:\s*/, '') }
@@ -145,7 +148,7 @@ export async function createLeaderboardAction(
   }
 
   revalidatePath('/dashboard')
-  redirect(`/dashboard/l/${leaderboard.id}?criado=1`)
+  redirect(`/dashboard/l/${leaderboard.id}/definicoes`)
 }
 
 export async function updateLeaderboardAction(
@@ -155,9 +158,9 @@ export async function updateLeaderboardAction(
   const id = String(formData.get('id') ?? '')
   if (!id) return { error: 'Leaderboard não encontrado.' }
 
-  const parsed = schema.partial({ slug: true }).safeParse({
+  const parsed = schema.safeParse({
     name: formData.get('name'),
-    slug: formData.get('slug') ? slugify(String(formData.get('slug'))) : undefined,
+    slug: slugify(String(formData.get('name') ?? '')),
     description: formData.get('description') ?? undefined,
     rules: formData.get('rules') ?? undefined,
     quote: formData.get('quote') ?? undefined,
@@ -165,8 +168,6 @@ export async function updateLeaderboardAction(
     announcement: formData.get('announcement') ?? undefined,
     startsAt: formData.get('startsAt') ?? undefined,
     endsAt: formData.get('endsAt') ?? undefined,
-    eventAt: formData.get('eventAt') ?? undefined,
-    periodMode: formData.get('periodMode') ?? undefined,
     timezone: formData.get('timezone') ?? undefined,
   })
 
@@ -180,48 +181,66 @@ export async function updateLeaderboardAction(
   }
 
   const supabase = await createClient()
-  const { data: current } = await supabase
-    .from('leaderboards')
-    .select('slug')
-    .eq('id', id)
-    .maybeSingle()
+  // Só o dono: a leitura pública da RLS devolvia a competição a qualquer pessoa.
+  const current = await getOwnedLeaderboard(id)
+  if (!current) return { error: 'Não foi possível carregar as definições. Atualiza a página e tenta novamente.' }
+  const supportsBlur = Object.prototype.hasOwnProperty.call(current, 'blur_rewards')
+  if (!supportsBlur && formData.get('blurRewards') === 'true') {
+    return { error: 'Ainda não é possível ocultar as quantias. Seleciona Mostrar quantia para guardar as restantes alterações.' }
+  }
 
   const { error } = await supabase
     .from('leaderboards')
     .update({
       name: parsed.data.name,
       slug: parsed.data.slug,
+      blur_rewards: supportsBlur && formData.has('blurRewards') ? formData.get('blurRewards') === 'true' : undefined,
       description: parsed.data.description,
-      rules: parsed.data.rules,
-      quote: parsed.data.quote,
-      quote_author: parsed.data.quoteAuthor,
-      announcement: parsed.data.announcement,
+      rules: formData.has('rules') ? parsed.data.rules : undefined,
+      quote: formData.has('quote') ? parsed.data.quote : undefined,
+      quote_author: formData.has('quoteAuthor') ? parsed.data.quoteAuthor : undefined,
+      announcement: formData.has('announcement') ? parsed.data.announcement : undefined,
       starts_at: parsed.data.startsAt ?? undefined,
       ends_at: parsed.data.endsAt,
-      event_at: parsed.data.eventAt,
-      period_mode: parsed.data.periodMode,
+      event_at: null,
+      period_mode: current.period_mode,
       timezone: parsed.data.timezone,
     })
     .eq('id', id)
 
   if (error) {
-    if (error.code === '23505') return { error: 'Esse endereço já está ocupado.' }
+    if (error.code === '23505') return { error: 'Esse endereço já está ocupado. Escolhe outro nome para a página.' }
     return { error: 'Não foi possível guardar as alterações.' }
   }
 
+  // Persist only reward positions included in this form; preserve other positions.
+  const submittedPositions = REWARD_POSITIONS.filter((position) => formData.has(`reward-${position}-amount`) && formData.has(`reward-${position}-label`))
+  const rewards = readRewards(formData).filter((reward) => submittedPositions.includes(reward.position))
+  if (rewards.length) {
+    const { error: rewardError } = await supabase.from('rewards').upsert(rewards.map((reward) => ({
+      leaderboard_id: id, position: reward.position, amount_cents: reward.amountCents, label: reward.label,
+    })), { onConflict: 'leaderboard_id,position' })
+    if (rewardError) return { error: 'Não foi possível guardar os prémios. Tenta novamente.' }
+  }
+  const emptyPositions = submittedPositions.filter((position) => !rewards.some((reward) => reward.position === position))
+  if (emptyPositions.length) {
+    const { error: rewardError } = await supabase.from('rewards').delete().eq('leaderboard_id', id).in('position', emptyPositions)
+    if (rewardError) return { error: 'Não foi possível remover os prémios. Tenta novamente.' }
+  }
+
   // O ranking muda de janela quando as datas mudam.
-  await supabase.rpc('recompute_leaderboard', { p_leaderboard_id: id })
+  await createAdminClient().rpc('recompute_leaderboard', { p_leaderboard_id: id })
 
   if (current?.slug) revalidateTag(`lb:${current.slug}`)
   if (parsed.data.slug) revalidateTag(`lb:${parsed.data.slug}`)
   revalidatePath(`/dashboard/l/${id}`)
 
-  return {}
+  return { success: true, slug: parsed.data.slug }
 }
 
 export async function endLeaderboardAction(formData: FormData) {
   const id = String(formData.get('id') ?? '')
-  if (!id) return
+  if (!id || !await getOwnedLeaderboard(id)) return
 
   const supabase = await createClient()
   const { data } = await supabase
@@ -231,7 +250,7 @@ export async function endLeaderboardAction(formData: FormData) {
     .select('slug')
     .maybeSingle()
 
-  await supabase.rpc('recompute_leaderboard', { p_leaderboard_id: id })
+  await createAdminClient().rpc('recompute_leaderboard', { p_leaderboard_id: id })
 
   if (data?.slug) revalidateTag(`lb:${data.slug}`)
   revalidatePath(`/dashboard/l/${id}`)
@@ -240,7 +259,7 @@ export async function endLeaderboardAction(formData: FormData) {
 
 export async function reopenLeaderboardAction(formData: FormData) {
   const id = String(formData.get('id') ?? '')
-  if (!id) return
+  if (!id || !await getOwnedLeaderboard(id)) return
 
   const supabase = await createClient()
   const { data } = await supabase
@@ -250,7 +269,7 @@ export async function reopenLeaderboardAction(formData: FormData) {
     .select('slug')
     .maybeSingle()
 
-  await supabase.rpc('recompute_leaderboard', { p_leaderboard_id: id })
+  await createAdminClient().rpc('recompute_leaderboard', { p_leaderboard_id: id })
 
   if (data?.slug) revalidateTag(`lb:${data.slug}`)
   revalidatePath(`/dashboard/l/${id}`)
