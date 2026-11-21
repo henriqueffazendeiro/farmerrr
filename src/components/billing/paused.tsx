@@ -25,7 +25,7 @@ export function OwnerPausedOverlay({ slug }: { slug: string }) {
       <div className={ready.content}>
         <img className={ready.check} src="/paused.webp" alt="" width={128} height={128} />
         <h1 id="paused-title">Página em pausa</h1>
-        <p id="paused-description">Ativa a subscrição para voltares a pôr a tua página online.</p>
+        <p id="paused-description">A página volta a ficar online assim que a subscrição for ativada.</p>
         {/* Direto para o Checkout do Stripe (mensal, com a opção de mudar para o anual lá dentro). */}
         <form action={startCheckout}>
           <input type="hidden" name="plan" value="monthly" />

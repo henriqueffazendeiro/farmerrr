@@ -21,6 +21,7 @@ export const metadata: Metadata = { title: 'Pré-visualizar entregar prémios', 
  * ?como=clipper → vista por um clipper que já participa (definições do clipper no lugar do "Participar").
  * ?como=visitante → vista por quem ainda não participa (com "Participar").
  * ?como=clipper&popup=premio → o pop-up "Prémio disponível" (o botão só fecha).
+ * ?popup=pago → o pop-up "Prémios pagos" que o dono vê ao voltar do pagamento.
  * ?processando=1 → o dono pagou por Multibanco e a referência ainda não foi paga.
  */
 export default async function PrizeDuePreviewPage({ searchParams }: { searchParams: Promise<{ como?: string; popup?: string; processando?: string }> }) {
@@ -54,5 +55,8 @@ export default async function PrizeDuePreviewPage({ searchParams }: { searchPara
     {popup === 'premio' && <PageReady param={[]} title="Prémio disponível" celebration="money"
       image="https://cdn.7tv.app/emote/01JV0DYKQZ8F4FJ7GPMM8RJP35/4x.gif"
       description="Parabéns! 475 € prontos a levantar para o IBAN." action="Levantar 475 €" />}
+    {popup === 'pago' && <PageReady param={[]} title="Prémios pagos" celebration="money"
+      image="https://cdn.7tv.app/emote/01HRBKB9T000072EX513ZQ4552/4x.png"
+      description="Os vencedores já podem levantar os prémios para o IBAN." action="Fechar" />}
   </>
 }

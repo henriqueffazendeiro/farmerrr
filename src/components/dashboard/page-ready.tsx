@@ -28,7 +28,7 @@ function SubmitAction({ label, pendingLabel }: { label: string; pendingLabel?: s
 }
 
 /** Pop-up de celebração: "Página pronta" para o streamer; também usado quando um clipper entra na competição. */
-export function PageReady({ title = 'Página pronta', description = 'Está tudo preparado para receberes a tua comunidade.', action = 'Ver página', param = 'criada', image = '/popcat.webp', celebration = 'confetti', submit, dismissKey }: Props = {}) {
+export function PageReady({ title = 'Página pronta', description = 'Está tudo preparado para receber a comunidade.', action = 'Ver página', param = 'criada', image = '/popcat.webp', celebration = 'confetti', submit, dismissKey }: Props = {}) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [closed, setClosed] = useState(false)
   const [notice, setNotice] = useState('')

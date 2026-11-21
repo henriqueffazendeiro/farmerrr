@@ -97,8 +97,10 @@ export function LiveClips({ live, lives, month, today, clips: tracked }: { live?
   const labels = { live: 'desta live', week: 'desta semana', month: 'deste mês', all: 'de sempre' }
   return <section className={styles.panel} aria-label={`Clips mais vistos ${labels[period]}`} data-live-date={live?.date} data-period={period}>
     <div className={styles.filters} role="group" aria-label="Período dos clips">
-      {([{ value: 'live', label: 'Esta live' }, { value: 'week', label: 'Esta semana' }, { value: 'month', label: 'Este mês' }, { value: 'all', label: 'De sempre' }] as const).map(item =>
-        <button type="button" key={item.value} aria-pressed={period === item.value} onClick={() => setPeriod(item.value)}>{item.label}</button>)}
+      {([{ value: 'live', label: 'Esta live', short: 'Live' }, { value: 'week', label: 'Esta semana', short: 'Semana' }, { value: 'month', label: 'Este mês', short: 'Mês' }, { value: 'all', label: 'De sempre', short: 'Sempre' }] as const).map(item =>
+        <button type="button" key={item.value} aria-pressed={period === item.value} aria-label={item.label} onClick={() => setPeriod(item.value)}>
+          <span className={styles.longLabel}>{item.label}</span><span className={styles.shortLabel} aria-hidden="true">{item.short}</span>
+        </button>)}
     </div>
     {clips.length ? <div ref={rows.box} className={styles.scroller} data-at-end={rows.atEnd} onScroll={rows.onScroll} style={{ maxHeight: rows.height }}><div className={styles.grid}>
       {clips.map((clip, index) => <article className={styles.card} key={clip.id} data-clip-id={clip.id} data-views={clip.views}>

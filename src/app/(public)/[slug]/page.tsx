@@ -123,6 +123,9 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
     periods={periods} periodKey={periodKey}
     sort={ordem === 'media' ? 'media' : 'views'} demo={isDemoLeaderboard(leaderboard.id)} lives={lives} clips={clips} isLive={lives.some(live => live.isLive)} />
     {isOwner && criada === '1' && <PageReady />}
+    {isOwner && premios === 'pago' && <PageReady param="premios" title="Prémios pagos" celebration="money"
+      image="https://cdn.7tv.app/emote/01HRBKB9T000072EX513ZQ4552/4x.png"
+      description="Os vencedores já podem levantar os prémios para o IBAN." action="Fechar" />}
     {clipperData && entrou === '1' && <PageReady param="entrou" title="Inscrição feita"
       description="A conta do TikTok está ligada."
       action="Ver ranking" />}
