@@ -8,7 +8,7 @@ import { ClipperPrizesView, prizeNotices } from '@/components/prizes/clipper-pri
 import { prizesConfigured } from '@/lib/prizes/payments'
 import { clipperPrizes, payoutAccount, type ClipperPrize } from '@/lib/prizes/payouts'
 import type { ClipperPayoutAccount } from '@/lib/db/types'
-import { DiscordField } from './discord-field'
+import { DiscordField, EmailField } from './discord-field'
 
 export type ClipperSettingsData = {
   slug: string
@@ -16,6 +16,7 @@ export type ClipperSettingsData = {
   displayName: string
   avatarUrl: string | null
   discord: string | null
+  email: string | null
   /** A ligação ao TikTok precisa de nova autorização. */
   needsReauth: boolean
   /** null: pagamentos de prémios desligados. */
@@ -51,6 +52,7 @@ export function ClipperSettingsView({ data, premios, preview = false }: { data: 
     </section>
 
     <DiscordField slug={data.slug} value={data.discord} preview={preview} />
+    <EmailField slug={data.slug} value={data.email} preview={preview} />
 
     {data.prizes && <Section title="Ganhos">
       {premios && prizeNotices[premios] && <p role="status" className="mb-2 text-sm">{prizeNotices[premios]}</p>}
@@ -73,7 +75,7 @@ export async function clipperSettingsData(slug: string): Promise<ClipperSettings
   const { participant, account } = member
   const profileId = participant.clipper_profile_id
   const [{ data: profile }, { data: social }, [prizes, payout]] = await Promise.all([
-    createAdminClient().from('clipper_profiles').select('display_name,avatar_url,discord').eq('id', profileId).maybeSingle(),
+    createAdminClient().from('clipper_profiles').select('display_name,avatar_url,discord,email').eq('id', profileId).maybeSingle(),
     createAdminClient().from('social_accounts').select('avatar_url').eq('clipper_profile_id', profileId).eq('provider', 'tiktok').maybeSingle(),
     prizesConfigured()
       ? Promise.all([clipperPrizes(profileId), payoutAccount(profileId)]).catch(() => [null, null] as const)
@@ -84,6 +86,7 @@ export async function clipperSettingsData(slug: string): Promise<ClipperSettings
     displayName: profile?.display_name ?? account?.display_name ?? 'Clipper',
     avatarUrl: profile?.avatar_url ?? social?.avatar_url ?? null,
     discord: profile?.discord ?? null,
+    email: profile?.email ?? null,
     needsReauth: !!account && account.status !== 'connected',
     prizes, payoutAccount: payout,
   }

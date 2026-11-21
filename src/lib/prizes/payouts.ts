@@ -8,7 +8,8 @@ import { prizeTitle } from './payments'
 
 const appUrl = () => (publicEnv.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '')
 
-export type ClipperPrize = PrizePayout & { title: string; leaderboardName: string; manual: boolean }
+/** leaderboardId/leaderboardName: a competição onde o prémio foi ganho (um clipper pode participar em várias). */
+export type ClipperPrize = PrizePayout & { title: string; leaderboardId: string | null; leaderboardName: string; manual: boolean }
 
 /** Prémios deste clipper (em todas as competições), mais recentes primeiro. */
 export async function clipperPrizes(clipperProfileId: string): Promise<ClipperPrize[]> {
@@ -24,7 +25,7 @@ export async function clipperPrizes(clipperProfileId: string): Promise<ClipperPr
   const nameOf = new Map((boards ?? []).map(b => [b.id, b.name]))
   return payouts.map(payout => {
     const payment = paymentOf.get(payout.payment_id)
-    return { ...payout, title: payment ? prizeTitle(payment.period_key) : 'Prémio',
+    return { ...payout, title: payment ? prizeTitle(payment.period_key) : 'Prémio', leaderboardId: payment?.leaderboard_id ?? null,
       leaderboardName: (payment?.leaderboard_id && nameOf.get(payment.leaderboard_id)) || '', manual: payment?.method === 'manual' }
   })
 }

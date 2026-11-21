@@ -53,8 +53,6 @@ export type Leaderboard = {
   cover_url: string | null
   starts_at: string
   ends_at: string | null
-  /** Primeiro início da competição (as datas das mensais avançam todos os meses; o histórico geral começa aqui). */
-  history_starts_at?: string | null
   event_at: string | null
   timezone: string
   status: LeaderboardStatus
@@ -72,6 +70,8 @@ export type ClipperProfile = {
   display_name: string
   avatar_url: string | null
   discord?: string | null
+  /** Para avisar o clipper quando tiver um prémio para levantar (preenchido nas definições dele). */
+  email?: string | null
   created_at: string
   updated_at: string
 }

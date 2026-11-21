@@ -11,7 +11,7 @@ const demoPrize = (id: string, over: Partial<ClipperPrize>): ClipperPrize => ({
   id, payment_id: `payment-${id}`, clipper_profile_id: 'profile-1', participant_id: 'clipper-1', position: 1,
   amount_cents: 47500, fee_cents: 2500, currency: 'EUR', status: 'available', stripe_transfer_id: null, last_error: null,
   transferred_at: null, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z',
-  title: 'Prémios de Outubro', leaderboardName: 'Batalha de Clippers', manual: false, ...over,
+  title: 'Prémios de Outubro', leaderboardId: 'demo', leaderboardName: 'Batalha de Clippers', manual: false, ...over,
 })
 
 export const metadata: Metadata = { title: 'Pré-visualizar entregar prémios', robots: { index: false, follow: false } }
@@ -21,10 +21,11 @@ export const metadata: Metadata = { title: 'Pré-visualizar entregar prémios', 
  * ?como=clipper → vista por um clipper que já participa (definições do clipper no lugar do "Participar").
  * ?como=visitante → vista por quem ainda não participa (com "Participar").
  * ?como=clipper&popup=premio → o pop-up "Prémio disponível" (o botão só fecha).
+ * ?processando=1 → o dono pagou por Multibanco e a referência ainda não foi paga.
  */
-export default async function PrizeDuePreviewPage({ searchParams }: { searchParams: Promise<{ como?: string; popup?: string }> }) {
+export default async function PrizeDuePreviewPage({ searchParams }: { searchParams: Promise<{ como?: string; popup?: string; processando?: string }> }) {
   if (process.env.NODE_ENV !== 'development') notFound()
-  const { como, popup } = await searchParams
+  const { como, popup, processando } = await searchParams
   const asOwner = como !== 'clipper' && como !== 'visitante'
   const leaderboard = demoLeaderboard()
   const periods = availablePeriods(leaderboard)
@@ -42,14 +43,14 @@ export default async function PrizeDuePreviewPage({ searchParams }: { searchPara
     totals={totals}
     clipperSettings={como === 'clipper' ? <ClipperSettingsView preview data={{
       slug: leaderboard.slug, username: 'clipsdoluis', displayName: 'Clips do Luís', avatarUrl: clippers[0]?.avatarUrl ?? null,
-      discord: 'clipsdoluis', needsReauth: false,
+      discord: 'clipsdoluis', email: 'luis@exemplo.com', needsReauth: false,
       prizes: [demoPrize('outubro', {}),
         demoPrize('setembro', { title: 'Prémios de Setembro', position: 2, amount_cents: 23750, fee_cents: 1250, status: 'paid' }),
-        demoPrize('agosto', { title: 'Prémios de Agosto', position: 3, amount_cents: 10000, fee_cents: 0, status: 'paid', manual: true })],
+        demoPrize('agosto', { title: 'Prémios de Agosto', position: 3, amount_cents: 10000, fee_cents: 0, status: 'paid', manual: true, leaderboardId: 'outra', leaderboardName: 'Liga do Rafa' })],
       payoutAccount: { transfers_enabled: true, details_submitted: true },
     }} /> : undefined}
     periods={periods} periodKey={periods[0]} sort="views" demo isOwner={asOwner} clockTarget={asOwner ? undefined : new Date(Date.now() + 9 * 86400000 + 5 * 3600000).toISOString()}
-    prizeDue={{ periodKey: '2026-10', periodName: 'Outubro', amountCents: winners.reduce((sum, w) => sum + w.amountCents, 0), winners }} />
+    prizeDue={{ periodKey: '2026-10', periodName: 'Outubro', amountCents: winners.reduce((sum, w) => sum + w.amountCents, 0), winners, processing: processando === '1' }} />
     {popup === 'premio' && <PageReady param={[]} title="Prémio disponível" celebration="money"
       image="https://cdn.7tv.app/emote/01JV0DYKQZ8F4FJ7GPMM8RJP35/4x.gif"
       description="Parabéns! 475 € prontos a levantar para o IBAN." action="Levantar 475 €" />}

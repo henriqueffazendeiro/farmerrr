@@ -10,7 +10,8 @@ export const netOf = (prizeCents: number) => prizeCents - feeFor(prizeCents)
 
 /** Prémios do último período fechado que o streamer ainda não entregou (o retângulo "Entregar prémios"). */
 export type DueWinner = { position: number; name: string; username: string | null; discord?: string | null; avatarUrl: string | null; amountCents: number }
-export type DuePrize = { periodKey: string; periodName: string; amountCents: number; winners: DueWinner[] }
+/** processing: já foi pago por Multibanco e falta a referência ser paga (não se pode pagar outra vez). */
+export type DuePrize = { periodKey: string; periodName: string; amountCents: number; winners: DueWinner[]; processing?: boolean }
 
 export type PrizeShare = { position: number; amountCents: number; participantId: string; clipperProfileId: string }
 

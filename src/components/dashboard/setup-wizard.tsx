@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, CalendarRange, Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { finishOnboarding } from '@/lib/onboarding/actions'
 import { streamLabels, streamPlatforms, type StreamPlatform } from '@/lib/streams/model'
@@ -13,18 +13,15 @@ import { Field } from '@/components/ui/field'
 import { MAX_REWARD_POSITIONS } from '@/lib/leaderboards/reward-positions'
 import styles from './setup-wizard.module.css'
 
-type Step = 'period' | 'dates' | 'rewards' | 'platform' | 'account'
+type Step = 'rewards' | 'platform' | 'account'
 const DRAFT_KEY = 'onboarding-draft'
 type Props = { initialPlatform?: StreamPlatform; initialChannel?: string; previewSlug?: string }
 
 export function SetupWizard({ initialPlatform, initialChannel = '', previewSlug }: Props) {
   const router = useRouter()
-  const [step, setStep] = useState<Step>('period')
-  const [period, setPeriod] = useState<'monthly' | 'fixed'>('monthly')
+  const [step, setStep] = useState<Step>('rewards')
   const [platform, setPlatform] = useState<StreamPlatform | null>(initialPlatform ?? null)
   const [account, setAccount] = useState(initialChannel)
-  const [start, setStart] = useState('')
-  const [end, setEnd] = useState('')
   const [rewardAmounts, setRewardAmounts] = useState(['', '', ''])
   const [skipRewards, setSkipRewards] = useState(false)
   const [pending, setPending] = useState(false)
@@ -32,7 +29,8 @@ export function SetupWizard({ initialPlatform, initialChannel = '', previewSlug 
   const [direction, setDirection] = useState(1)
   const heading = useRef<HTMLHeadingElement>(null)
   const reduced = useReducedMotion()
-  const steps: Step[] = period === 'monthly' ? ['period', 'rewards', 'platform', 'account'] : ['period', 'dates', 'rewards', 'platform', 'account']
+  // A competição é sempre mensal e automática (do dia 1 ao último dia de cada mês): não há passo de datas.
+  const steps: Step[] = ['rewards', 'platform', 'account']
   const index = steps.indexOf(step)
   const progress = ((index + 1) / steps.length) * 100
   // Voltou do pagamento sem pagar (ou o pagamento passou mas a página não foi criada): repõe as respostas
@@ -43,7 +41,7 @@ export function SetupWizard({ initialPlatform, initialChannel = '', previewSlug 
     try {
       const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null')
       if (draft) {
-        setPeriod(draft.period); setPlatform(draft.platform); setAccount(draft.account); setStart(draft.start); setEnd(draft.end)
+        setPlatform(draft.platform); setAccount(draft.account)
         setRewardAmounts(draft.rewardAmounts); setSkipRewards(draft.skipRewards); setStep('account')
       }
     } catch { /* Storage may be disabled. */ }
@@ -59,13 +57,6 @@ export function SetupWizard({ initialPlatform, initialChannel = '', previewSlug 
     event.preventDefault()
     if (pending) return
     setError('')
-    if (step === 'period') return go(period === 'fixed' ? 'dates' : 'rewards')
-    if (step === 'dates') {
-      if (!start || !end || !Number.isFinite(Date.parse(start)) || Date.parse(end) <= Date.parse(start)) {
-        setError('Escolhe uma data de fim posterior ao início.'); return
-      }
-      return go('rewards')
-    }
     if (step === 'rewards') { setSkipRewards(false); return go('platform') }
     if (step === 'platform') { if (platform) go('account'); return }
     if (step !== 'account' || !platform) return
@@ -74,17 +65,17 @@ export function SetupWizard({ initialPlatform, initialChannel = '', previewSlug 
     setPending(true)
     try {
       const now = new Date()
-      const result = await finishOnboarding({ period, platform, channel: account,
+      const result = await finishOnboarding({ period: 'monthly', platform, channel: account,
         rewards: skipRewards ? [] : rewardAmounts.flatMap((amount, index) => amount.trim() && Number(amount) > 0
           ? [{ position: index + 1, amountCents: Math.round(Number(amount) * 100) }] : []),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        startsAt: period === 'monthly' ? new Date(now.getFullYear(), now.getMonth(), 1).toISOString() : new Date(start).toISOString(),
-        endsAt: period === 'monthly' ? null : new Date(end).toISOString(),
+        startsAt: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+        endsAt: null,
       })
       // Pagamento primeiro (página externa do Stripe): a página só é criada depois de pagar.
       // As respostas ficam guardadas neste browser para não se perderem se a pessoa voltar atrás.
       if (result.next) {
-        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ period, platform, account, start, end, rewardAmounts, skipRewards })) } catch { /* Storage may be disabled. */ }
+        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ platform, account, rewardAmounts, skipRewards })) } catch { /* Storage may be disabled. */ }
         window.location.assign(result.next); return
       }
       if (!result.slug) { setError(result.error ?? 'Não foi possível criar a página.'); return }
@@ -97,8 +88,8 @@ export function SetupWizard({ initialPlatform, initialChannel = '', previewSlug 
     } catch { setError('Não foi possível concluir. Tenta novamente.') }
     finally { setPending(false) }
   }
-  const titles: Record<Step, string> = { period: 'Vamos criar a tua página', dates: 'Escolhe as datas', rewards: 'Quais são os prémios?', platform: 'Onde fazes as tuas lives?', account: 'Qual é a tua conta?' }
-  const descriptions: Record<Step, string> = { period: 'Primeiro, como queres organizar a competição?', dates: 'Define o início e o fim da tua competição.',
+  const titles: Record<Step, string> = { rewards: 'Quais são os prémios?', platform: 'Onde fazes as tuas lives?', account: 'Qual é a tua conta?' }
+  const descriptions: Record<Step, string> = {
     rewards: 'Define o valor para cada lugar. Podes deixar em branco e decidir mais tarde.',
     platform: 'Escolhe a plataforma que usas.', account: `Indica o teu canal ${platform ? streamLabels[platform] : ''}.` }
   return <section className={styles.wizard} aria-label="Criar a tua página">
@@ -115,17 +106,6 @@ export function SetupWizard({ initialPlatform, initialChannel = '', previewSlug 
       <form onSubmit={next} className={styles.form}>
         <div className={styles.fields}>
         <motion.div key={`options-${step}`} initial={reduced ? false : { opacity: 0, x: direction * 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: reduced ? 0 : 0.45, delay: reduced ? 0 : 0.06, ease: [0.22, 1, 0.36, 1] }}>
-        {step === 'period' && <div className={styles.options} role="group" aria-label="Período da competição">
-          {([{ value: 'monthly', title: 'Por meses', text: 'Começa neste mês. Uma nova classificação todos os meses.', icon: CalendarDays },
-            { value: 'fixed', title: 'Datas personalizadas', text: 'Tu escolhes quando começa e quando termina.', icon: CalendarRange }] as const).map(item => <button key={item.value} type="button" aria-pressed={period === item.value}
-              className={styles.option} onClick={() => setPeriod(item.value)}>
-            <item.icon size={23} strokeWidth={1.5} /><span><strong>{item.title}</strong><small>{item.text}</small></span>
-          </button>)}
-        </div>}
-        {step === 'dates' && <div className={styles.dates}>
-          <Field label="Data de início" name="startsAt" type="datetime-local" value={start} onChange={event => setStart(event.target.value)} required />
-          <Field label="Data de fim" name="endsAt" type="datetime-local" value={end} min={start || undefined} onChange={event => setEnd(event.target.value)} required />
-        </div>}
         {step === 'rewards' && <div className={styles.rewardPanel}>
           <div className={styles.rewards} role="group" aria-label="Prémios da competição">
           {rewardAmounts.map((amount, index) => <div key={index} className={`${styles.reward} grid grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-3`}>

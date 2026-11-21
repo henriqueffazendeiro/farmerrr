@@ -2,9 +2,10 @@ import { z } from 'zod'
 import { MAX_REWARD_POSITIONS } from '@/lib/leaderboards/reward-positions'
 
 export const onboardingSchema = z.object({
-  period: z.enum(['monthly', 'fixed']),
+  // Só há competições mensais automáticas (do dia 1 ao último dia de cada mês). `.catch`: pagamentos antigos ainda em curso.
+  period: z.literal('monthly').catch('monthly'),
   startsAt: z.string().datetime({ offset: true }),
-  endsAt: z.string().datetime({ offset: true }).nullable(),
+  endsAt: z.null().catch(null),
   timezone: z.string().refine(value => {
     try { new Intl.DateTimeFormat('pt-PT', { timeZone: value }); return true } catch { return false }
   }, 'Fuso horário inválido.'),
@@ -15,13 +16,6 @@ export const onboardingSchema = z.object({
     amountCents: z.number().int().min(1).max(100000000),
   })).max(MAX_REWARD_POSITIONS).refine(rewards => new Set(rewards.map(reward => reward.position)).size === rewards.length,
     'Cada lugar só pode ter um prémio.').default([]),
-}).superRefine((value, ctx) => {
-  if (value.period === 'fixed' && (!value.endsAt || Date.parse(value.endsAt) <= Date.parse(value.startsAt))) {
-    ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'Escolhe uma data de fim posterior ao início.' })
-  }
-  if (value.period === 'monthly' && value.endsAt !== null) {
-    ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'O período mensal não precisa de data de fim.' })
-  }
 })
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>

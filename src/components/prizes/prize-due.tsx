@@ -79,24 +79,21 @@ function DeliveryOptions({ prize, leaderboardId, returnTo }: { prize: DuePrize; 
   </div>
 }
 
-/** A competição está em pausa (todos menos o dono com prémios por entregar): o mesmo retângulo, sem clique. */
-export function PrizeStatusBanner({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
-  return <div className={`${summary.prizeDue} ${summary.prizeDueStatic}`} role="status">
-    <Hyperspace className={summary.prizeDueSpace} starCount={260} />
-    <span className={summary.prizeDueCopy}>
-      <span className={summary.prizeDueEyebrow}>{eyebrow}</span>
-      <span className={summary.prizeDueTitle}>{title}</span>
-      <span className={summary.prizeDueText}>{text}</span>
-    </span>
-  </div>
-}
-
 /**
  * O mês acabou e os prémios ainda não foram entregues (só o dono vê). O retângulo inteiro é clicável e abre o painel
  * com as duas opções. Mesmo estilo do "Pronto para começar?" da página inicial (estrelas, sem caixa, texto ao centro).
  */
 export function PrizeDueBanner({ prize, leaderboardId, returnTo }: { prize: DuePrize; leaderboardId: string; returnTo: string }) {
   const [open, setOpen] = useState(false)
+  // Pago por Multibanco, à espera da referência: só informa (não deixa pagar outra vez).
+  if (prize.processing) return <div className={`${summary.prizeDue} ${summary.prizeDueStatic}`} role="status">
+    <Hyperspace className={summary.prizeDueSpace} starCount={260} />
+    <span className={summary.prizeDueCopy}>
+      <span className={summary.prizeDueEyebrow}>{prize.periodName} terminou</span>
+      <span className={summary.prizeDueTitle}>Pagamento em processamento</span>
+      <span className={summary.prizeDueText}>Os prémios ficam disponíveis assim que a referência Multibanco for paga.</span>
+    </span>
+  </div>
   return <>
     <button type="button" className={summary.prizeDue} onClick={() => setOpen(true)} aria-haspopup="dialog">
       <Hyperspace className={summary.prizeDueSpace} starCount={260} />

@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicEnv } from '@/lib/config/env'
 import { getSubscription, stripe } from '@/lib/billing/stripe'
-import { currentPeriodKey, isPaused, nextMonthlyDates, periodLabel, periodTitle, ALL_TIME } from '@/lib/period'
+import { currentPeriodKey, periodLabel, periodTitle, ALL_TIME } from '@/lib/period'
 import type { Leaderboard, PrizePayment, PrizePayout } from '@/lib/db/types'
 import { closedPeriods, feeFor, netOf, splitPrizes, type DuePrize, type PrizeShare } from './model'
 
@@ -61,7 +61,7 @@ export async function upcomingPrize(board: Board): Promise<DuePrize | null> {
 
 async function prizeFor(board: Board, periodKey: string): Promise<DuePrize | null> {
   if (await paidPayment(board.id, periodKey)) return null
-  const split = await prizeSplit(board.id, periodKey)
+  const [split, processing] = await Promise.all([prizeSplit(board.id, periodKey), processingPayment(board.id, periodKey)])
   if (!split.length) return null
   const ids = split.map(share => share.clipperProfileId)
   const db = createAdminClient()
@@ -71,7 +71,7 @@ async function prizeFor(board: Board, periodKey: string): Promise<DuePrize | nul
   ])
   const profileOf = new Map((profiles ?? []).map(p => [p.id, p]))
   const accountOf = new Map((accounts ?? []).map(a => [a.clipper_profile_id, a]))
-  return { periodKey, periodName: periodKey === ALL_TIME ? 'A competição' : periodLabel(periodKey),
+  return { periodKey, periodName: periodKey === ALL_TIME ? 'A competição' : periodLabel(periodKey), processing,
     amountCents: split.reduce((sum, share) => sum + share.amountCents, 0),
     winners: split.map(share => ({ position: share.position, amountCents: share.amountCents,
       name: profileOf.get(share.clipperProfileId)?.display_name ?? 'Clipper', username: accountOf.get(share.clipperProfileId)?.username ?? null,
@@ -101,49 +101,21 @@ export async function recordManualPayment(board: Board, periodKey: string) {
     participant_id: share.participantId, clipper_profile_id: share.clipperProfileId, transferred_at: now,
   })))
   if (payoutsError) throw payoutsError
-  await advanceAfterPrize(board.id)
+  await refreshBoard(board.id)
 }
 
-type DatedBoard = Pick<Leaderboard, 'id' | 'period_mode' | 'timezone' | 'starts_at' | 'ends_at' | 'status' | 'history_starts_at'>
-
-/** Em pausa: falta entregar os prémios do mês que acabou? (false se já foram entregues ou se não há prémios.) */
-async function prizesPending(board: DatedBoard) {
-  const key = currentPeriodKey(board)
-  if (await paidPayment(board.id, key)) return false
-  return (await prizeSplit(board.id, key)).length > 0
-}
-
-/**
- * Competição mensal com datas, em pausa: começa a seguinte quando os prémios estão entregues (ou não há prémios) E
- * já chegou o dia de início seguinte. As datas avançam um mês (os mesmos dias que o streamer escolheu).
- * Chamado ao abrir a página e logo depois de cada entrega. Devolve true se avançou.
- */
-export async function advanceMonthlyDates(board: DatedBoard, now = Date.now()) {
-  if (!isPaused(board, now) || !board.ends_at) return false
-  const next = nextMonthlyDates({ timezone: board.timezone, starts_at: board.starts_at, ends_at: board.ends_at }, now)
-  if (next.starts.getTime() > now || await prizesPending(board)) return false
-  const db = createAdminClient()
-  const { data } = await db.from('leaderboards')
-    .update({ starts_at: next.starts.toISOString(), ends_at: next.ends.toISOString(), history_starts_at: board.history_starts_at ?? board.starts_at })
-    .eq('id', board.id).eq('ends_at', board.ends_at).select('id')
-  if (!data?.length) return false
-  await db.rpc('recompute_leaderboard', { p_leaderboard_id: board.id })
-  return true
-}
-
-/** Para o retângulo da pausa: os prémios do mês que acabou já foram entregues? Há prémios? */
-export async function pauseState(board: DatedBoard) {
-  const key = currentPeriodKey(board)
-  const [paid, split] = await Promise.all([paidPayment(board.id, key), prizeSplit(board.id, key)])
-  return { delivered: !!paid, hasPrizes: split.length > 0 }
-}
-
-async function advanceAfterPrize(leaderboardId: string | null) {
+/** Prémios entregues: a página pública deixa de mostrar o "Entregar prémios". */
+async function refreshBoard(leaderboardId: string | null) {
   if (!leaderboardId) return
-  const { data: board } = await createAdminClient().from('leaderboards').select('*').eq('id', leaderboardId).maybeSingle()
-  if (!board) return
-  await advanceMonthlyDates(board).catch(error => console.error('[monthly dates]', error instanceof Error ? error.message : error))
-  try { revalidateTag(`lb:${board.slug}`) } catch { /* fora de um pedido (scripts) */ }
+  const { data: board } = await createAdminClient().from('leaderboards').select('slug').eq('id', leaderboardId).maybeSingle()
+  if (board) try { revalidateTag(`lb:${board.slug}`) } catch { /* fora de um pedido (scripts) */ }
+}
+
+/** Há um pagamento por Multibanco à espera da referência (o Checkout terminou, o dinheiro ainda não chegou)? */
+async function processingPayment(leaderboardId: string, periodKey: string) {
+  const { data } = await createAdminClient().from('prize_payments').select('id').eq('leaderboard_id', leaderboardId)
+    .eq('period_key', periodKey).eq('status', 'pending').not('stripe_payment_intent_id', 'is', null).limit(1)
+  return Boolean(data?.length)
 }
 
 export async function paidPayment(leaderboardId: string, periodKey: string) {
@@ -208,7 +180,14 @@ const idOf = (value: string | { id: string } | null | undefined) => typeof value
 export async function settlePrizeCheckout(session: Stripe.Checkout.Session): Promise<'paid' | 'processing' | 'refunded' | null> {
   const paymentId = session.metadata?.kind === 'prize_payment' ? session.metadata.prize_payment_id : null
   if (!paymentId) return null
-  if (session.payment_status !== 'paid') return 'processing'
+  if (session.payment_status !== 'paid') {
+    // Multibanco: o Checkout terminou mas a referência ainda não foi paga. Fica marcado (o retângulo deixa de
+    // deixar pagar outra vez) até chegar o async_payment_succeeded ou o async_payment_failed.
+    const pendingIntent = session.status === 'complete' ? idOf(session.payment_intent) : null
+    if (pendingIntent) await createAdminClient().from('prize_payments').update({ stripe_payment_intent_id: pendingIntent })
+      .eq('id', paymentId).eq('status', 'pending')
+    return 'processing'
+  }
   const intentId = idOf(session.payment_intent)
   if (!intentId) return 'processing'
   const intent = await stripe().paymentIntents.retrieve(intentId)
@@ -226,7 +205,7 @@ export async function settlePrizeCheckout(session: Stripe.Checkout.Session): Pro
   if (error) throw error
   if (updated?.length) {
     await db.from('prize_payouts').update({ status: 'available' }).eq('payment_id', paymentId).eq('status', 'awaiting_payment')
-    await advanceAfterPrize(updated[0].leaderboard_id)
+    await refreshBoard(updated[0].leaderboard_id)
   }
   return 'paid'
 }

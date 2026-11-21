@@ -5,13 +5,13 @@ import type { Leaderboard } from '@/lib/db/types'
 import { payPrizesAction } from '@/lib/prizes/actions'
 import { paidPayment, payablePeriods, payoutsOf, prizeSplit, prizeTitle, prizesConfigured } from '@/lib/prizes/payments'
 
-const notices: Record<string, string> = {
+export const streamerPrizeNotices: Record<string, string> = {
   entregue: 'Prémios marcados como entregues.',
   pago: 'Pagamento recebido. Cada clipper já pode levantar o seu prémio.',
   processando: 'Pagamento em processamento (Multibanco pode demorar). Os clippers podem levantar assim que for confirmado.',
   duplicado: 'Estes prémios já tinham sido pagos — o pagamento repetido foi devolvido.',
-  erro: 'Não foi possível abrir o pagamento. Tenta novamente.',
-  indisponivel: 'Os pagamentos ainda não estão configurados.',
+  erro: 'Não foi possível concluir. Tente novamente daqui a pouco.',
+  indisponivel: 'Os pagamentos ainda não estão disponíveis.',
 }
 
 const payoutLabel: Record<string, string> = {
@@ -37,7 +37,7 @@ export async function StreamerPrizes({ board, notice }: { board: Leaderboard; no
   return (
     <section aria-labelledby="premios-title" className="mt-6 pt-6">
       <h3 id="premios-title" className="mb-1.5 text-xs text-fg-muted">Prémios</h3>
-      {notice && notices[notice] && <p role="status" className="mb-3 text-sm">{notices[notice]}</p>}
+      {notice && streamerPrizeNotices[notice] && <p role="status" className="mb-3 text-sm">{streamerPrizeNotices[notice]}</p>}
       <div className="space-y-3">
         {visible.map(({ periodKey, payment, shares }) => {
           const prizes = shares.reduce((sum, s) => sum + s.amountCents, 0)
@@ -63,6 +63,8 @@ export async function StreamerPrizes({ board, notice }: { board: Leaderboard; no
                 <form action={payPrizesAction} className="mt-4">
                   <input type="hidden" name="leaderboardId" value={board.id} />
                   <input type="hidden" name="periodKey" value={periodKey} />
+                  {/* Depois do pagamento volta à página da competição (não à página separada das definições). */}
+                  <input type="hidden" name="returnTo" value={`/${board.slug}`} />
                   <Button type="submit" className="w-full">Pagar prémios · {money(prizes)}</Button>
                   <p className="mt-2 text-center text-xs text-fg-subtle">Cada clipper recebe o seu prémio menos 5% de taxa de serviço.</p>
                 </form>

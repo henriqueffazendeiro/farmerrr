@@ -21,6 +21,19 @@ export async function saveClipperDiscordAction(_previous: DiscordState, form: Fo
   return error ? { error: 'Não foi possível guardar. Tente novamente.' } : { ok: true }
 }
 
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+/** Email do clipper (privado): para o avisar quando tiver um prémio para levantar. Vazio apaga. */
+export async function saveClipperEmailAction(_previous: DiscordState, form: FormData): Promise<DiscordState> {
+  const member = await getClipperMembership(String(form.get('slug') || ''))
+  if (!member) return { error: 'A sessão terminou. Entre novamente com o TikTok.' }
+  const email = String(form.get('email') ?? '').trim().toLowerCase()
+  if (email && (email.length > 254 || !EMAIL.test(email))) return { error: 'Email inválido.' }
+  const { error } = await createAdminClient().from('clipper_profiles')
+    .update({ email: email || null }).eq('id', member.participant.clipper_profile_id)
+  return error ? { error: 'Não foi possível guardar. Tente novamente.' } : { ok: true }
+}
+
 /** "Terminar sessão" do clipper: apaga a sessão e volta à página da competição (com "Participar"). */
 export async function clipperSignOutAction(form: FormData) {
   const slug = String(form.get('slug') || '')
