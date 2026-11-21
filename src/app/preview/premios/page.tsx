@@ -5,6 +5,7 @@ import { demoClippers, demoCreator, demoLeaderboard, demoRewards } from '@/lib/l
 import { availablePeriods } from '@/lib/period'
 import { ClipperSettingsView } from '@/components/clipper/clipper-settings'
 import type { ClipperPrize } from '@/lib/prizes/payouts'
+import { PageReady } from '@/components/dashboard/page-ready'
 
 const demoPrize = (id: string, over: Partial<ClipperPrize>): ClipperPrize => ({
   id, payment_id: `payment-${id}`, clipper_profile_id: 'profile-1', participant_id: 'clipper-1', position: 1,
@@ -19,10 +20,11 @@ export const metadata: Metadata = { title: 'Pré-visualizar entregar prémios', 
  * Só em desenvolvimento: o que o dono vê no lugar do contador quando o mês acaba e os prémios estão por entregar.
  * ?como=clipper → vista por um clipper que já participa (definições do clipper no lugar do "Participar").
  * ?como=visitante → vista por quem ainda não participa (com "Participar").
+ * ?como=clipper&popup=premio → o pop-up "Prémio disponível" (o botão só fecha).
  */
-export default async function PrizeDuePreviewPage({ searchParams }: { searchParams: Promise<{ como?: string }> }) {
+export default async function PrizeDuePreviewPage({ searchParams }: { searchParams: Promise<{ como?: string; popup?: string }> }) {
   if (process.env.NODE_ENV !== 'development') notFound()
-  const como = (await searchParams).como
+  const { como, popup } = await searchParams
   const asOwner = como !== 'clipper' && como !== 'visitante'
   const leaderboard = demoLeaderboard()
   const periods = availablePeriods(leaderboard)
@@ -36,7 +38,7 @@ export default async function PrizeDuePreviewPage({ searchParams }: { searchPara
     const clipper = clippers.find(c => c.rank === reward.position)!
     return { position: reward.position, name: clipper.displayName, username: clipper.username, avatarUrl: clipper.avatarUrl, amountCents: reward.amount_cents ?? 0 }
   })
-  return <StreamerLeaderboard leaderboard={leaderboard} creator={demoCreator()} clippers={clippers} rewards={rewards}
+  return <><StreamerLeaderboard leaderboard={leaderboard} creator={demoCreator()} clippers={clippers} rewards={rewards}
     totals={totals}
     clipperSettings={como === 'clipper' ? <ClipperSettingsView preview data={{
       slug: leaderboard.slug, username: 'clipsdoluis', displayName: 'Clips do Luís', avatarUrl: clippers[0]?.avatarUrl ?? null,
@@ -48,4 +50,8 @@ export default async function PrizeDuePreviewPage({ searchParams }: { searchPara
     }} /> : undefined}
     periods={periods} periodKey={periods[0]} sort="views" demo isOwner={asOwner} clockTarget={asOwner ? undefined : new Date(Date.now() + 9 * 86400000 + 5 * 3600000).toISOString()}
     prizeDue={{ periodKey: '2026-10', periodName: 'Outubro', amountCents: winners.reduce((sum, w) => sum + w.amountCents, 0), winners }} />
+    {popup === 'premio' && <PageReady param={[]} title="Prémio disponível" celebration="money"
+      image="https://cdn.7tv.app/emote/01JV0DYKQZ8F4FJ7GPMM8RJP35/4x.gif"
+      description="Parabéns! 475 € prontos a levantar para o IBAN." action="Levantar 475 €" />}
+  </>
 }

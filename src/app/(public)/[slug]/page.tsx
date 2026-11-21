@@ -15,6 +15,7 @@ import { OwnerPausedOverlay, PausedPage } from '@/components/billing/paused'
 import { advanceMonthlyDates, duePrize, pauseState, upcomingPrize } from '@/lib/prizes/payments'
 import { ClipperSettingsView, clipperSettingsData } from '@/components/clipper/clipper-settings'
 import { prizeNotices } from '@/components/prizes/clipper-prizes'
+import { withdrawPrizesAction } from '@/lib/prizes/actions'
 import { money } from '@/lib/format'
 
 export const revalidate = 60
@@ -123,6 +124,10 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
   const withdrawn = clipperData && premios === 'enviado'
   const withdrawnCents = Number(valor)
   const clipperNotice = clipperData && premios && premios !== 'enviado' && prizeNotices[premios] ? premios : undefined
+  // Vencedor com prémio pago pelo site e ainda por levantar: pop-up com o botão "Levantar" (até levantar ou fechar).
+  const available = (clipperData?.prizes ?? []).filter(prize => prize.status === 'available')
+  const availableCents = available.reduce((sum, prize) => sum + prize.amount_cents, 0)
+  const showPrizeReady = availableCents > 0 && !premios && entrou !== '1'
   return <>{!access && <OwnerPausedOverlay slug={leaderboard.slug} />}<StreamerLeaderboard leaderboard={leaderboard} creator={creator} datasets={datasets} join={joinFormProps(leaderboard)}
     isOwner={isOwner} settingsContent={settingsContent} prizeDue={prizeDue} prizeNext={prizeNext} clockTarget={currentPeriodEnd(leaderboard)}
     pause={pauseBanner} refreshAt={nextStart && !waitingForPrizes ? nextStart.toISOString() : null}
@@ -139,5 +144,11 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
       image="https://cdn.7tv.app/emote/01HRBKB9T000072EX513ZQ4552/4x.png"
       description={`Parabéns! ${Number.isFinite(withdrawnCents) && withdrawnCents > 0 ? money(withdrawnCents) : 'O prémio'} a caminho do IBAN. O dinheiro chega em poucos dias úteis.`}
       action="Fechar" />}
+    {showPrizeReady && <PageReady param={[]} title="Prémio disponível" celebration="money"
+      image="https://cdn.7tv.app/emote/01JV0DYKQZ8F4FJ7GPMM8RJP35/4x.gif"
+      description={`Parabéns! ${money(availableCents)} prontos a levantar para o IBAN.`}
+      action={`Levantar ${money(availableCents)}`}
+      submit={{ action: withdrawPrizesAction, fields: { slug: leaderboard.slug }, pendingLabel: 'A abrir…' }}
+      dismissKey={`prize-ready:${available.map(prize => prize.id).sort().join(',')}`} />}
   </>
 }
