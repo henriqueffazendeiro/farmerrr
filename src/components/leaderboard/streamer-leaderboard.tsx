@@ -154,24 +154,26 @@ function CompetitionClock({ target, onEnd }: { target: string; onEnd?: () => voi
     if (!wasRunning.current) return
     wasRunning.current = false
     onEnd?.()
-    const timer = setTimeout(() => router.refresh(), 1500)
+    const timer = setTimeout(() => router.refresh(), 800)
     return () => clearTimeout(timer)
   }, [remaining, router, onEnd])
   const seconds = Math.floor((remaining ?? 0) / 1000)
   const values = [Math.floor(seconds / 86400), Math.floor(seconds / 3600) % 24, Math.floor(seconds / 60) % 60, seconds % 60]
   return <div className={summary.countdown}>
-    {remaining === 0 ? <p className={summary.eventEnded}>Competição terminada</p> : <div className={summary.clock}>
+    {/* Em zero fica 00:00 por instantes, até chegar o contador seguinte (ou o "Entregar prémios"). */}
+    <div className={summary.clock}>
       {['dias', 'horas', 'min', 'seg'].map((unit, i) => <div key={unit} className={summary.clockUnit}>
         {i > 0 && <span className={summary.clockSeparator} aria-hidden>:</span>}
         <strong>{remaining === null ? '--' : String(values[i]).padStart(2, '0')}</strong><span>{unit}</span>
       </div>)}
-    </div>}
+    </div>
   </div>
 }
 
 export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings }: Props) {
   // O contador que chegou a zero (quando o servidor manda o do mês seguinte, deixa de contar como terminado).
-  const clockFor = clockTarget ?? lb.ends_at
+  // clockTarget null: sem contador (competição de data fixa que já acabou).
+  const clockFor = clockTarget !== undefined ? clockTarget : lb.ends_at
   const [endedClock, setEndedClock] = useState<string | null>(null)
   const endClock = useCallback(() => setEndedClock(clockFor), [clockFor])
   const shownPrize = prizeDue ?? (endedClock != null && endedClock === clockFor ? prizeNext : null)
@@ -276,8 +278,8 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
       <h1 className={styles.srOnly}>{lb.name} · {name}</h1>
       {isOwner && shownPrize ? <section className={summary.timerSection} aria-label="Entregar prémios">
         <PrizeDueBanner prize={shownPrize} leaderboardId={lb.id} returnTo={`/${lb.slug}`} />
-      </section> : (clockTarget ?? lb.ends_at) && <section className={summary.timerSection} aria-label="Fim da competição">
-        <CompetitionClock target={(clockTarget ?? lb.ends_at)!} onEnd={isOwner ? endClock : undefined} />
+      </section> : clockFor && <section className={summary.timerSection} aria-label="Fim da competição">
+        <CompetitionClock target={clockFor} onEnd={isOwner ? endClock : undefined} />
       </section>}
 
       <section className={summary.stats} aria-label="Estatísticas da competição">

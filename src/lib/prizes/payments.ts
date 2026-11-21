@@ -1,5 +1,6 @@
 import 'server-only'
 import type Stripe from 'stripe'
+import { revalidateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicEnv } from '@/lib/config/env'
 import { getSubscription, stripe } from '@/lib/billing/stripe'
@@ -100,6 +101,21 @@ export async function recordManualPayment(board: Board, periodKey: string) {
     participant_id: share.participantId, clipper_profile_id: share.clipperProfileId, transferred_at: now,
   })))
   if (payoutsError) throw payoutsError
+  await restartAfterPrize(board.id)
+}
+
+/**
+ * Prémios entregues numa competição mensal que já tinha passado a data de fim: começa logo a seguinte.
+ * A data de fim sai, o contador passa a contar até ao fim do mês e as inscrições e a contagem de views voltam a abrir.
+ */
+async function restartAfterPrize(leaderboardId: string | null) {
+  if (!leaderboardId) return
+  const db = createAdminClient()
+  const { data } = await db.from('leaderboards').update({ ends_at: null }).eq('id', leaderboardId)
+    .eq('period_mode', 'monthly').eq('status', 'active').lte('ends_at', new Date().toISOString()).select('slug')
+  if (!data?.length) return
+  await db.rpc('recompute_leaderboard', { p_leaderboard_id: leaderboardId })
+  try { revalidateTag(`lb:${data[0].slug}`) } catch { /* fora de um pedido (scripts) */ }
 }
 
 export async function paidPayment(leaderboardId: string, periodKey: string) {
@@ -171,7 +187,7 @@ export async function settlePrizeCheckout(session: Stripe.Checkout.Session): Pro
   const db = createAdminClient()
   const { data: updated, error } = await db.from('prize_payments')
     .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent_id: intentId, stripe_charge_id: idOf(intent.latest_charge) })
-    .eq('id', paymentId).eq('status', 'pending').select('id')
+    .eq('id', paymentId).eq('status', 'pending').select('id,leaderboard_id')
   if (error?.code === '23505') {
     // Já havia outro pagamento deste período (ex.: dois Checkouts abertos, um por Multibanco): devolve-se este.
     await stripe().refunds.create({ payment_intent: intentId, reason: 'duplicate' }, { idempotencyKey: `prize-duplicate-${paymentId}` })
@@ -180,7 +196,10 @@ export async function settlePrizeCheckout(session: Stripe.Checkout.Session): Pro
     return 'refunded'
   }
   if (error) throw error
-  if (updated?.length) await db.from('prize_payouts').update({ status: 'available' }).eq('payment_id', paymentId).eq('status', 'awaiting_payment')
+  if (updated?.length) {
+    await db.from('prize_payouts').update({ status: 'available' }).eq('payment_id', paymentId).eq('status', 'awaiting_payment')
+    await restartAfterPrize(updated[0].leaderboard_id)
+  }
   return 'paid'
 }
 

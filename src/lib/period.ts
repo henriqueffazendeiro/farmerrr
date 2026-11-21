@@ -116,10 +116,15 @@ export function periodBounds(
 
 /**
  * Quando acaba a corrida atual (para o contador): o fim do mês nas competições mensais,
- * ou a data de fim, se for antes.
+ * ou a data de fim, se for antes. Uma data de fim que já passou não conta: nas mensais o contador
+ * passa logo para o fim do mês; nas de data fixa (ou terminadas) não há contador (null).
  */
-export function currentPeriodEnd(lb: { period_mode: PeriodMode; timezone: string; ends_at: string | null }): string | null {
-  const end = lb.ends_at ? new Date(lb.ends_at) : null
+export function currentPeriodEnd(
+  lb: { period_mode: PeriodMode; timezone: string; ends_at: string | null; status?: string },
+  now = Date.now(),
+): string | null {
+  if (lb.status && lb.status !== 'active') return null
+  const end = lb.ends_at && new Date(lb.ends_at).getTime() > now ? new Date(lb.ends_at) : null
   if (lb.period_mode !== 'monthly') return end?.toISOString() ?? null
   const next = monthStart(addMonth(currentPeriodKey(lb)), lb.timezone || 'Europe/Lisbon')
   return (end && end < next ? end : next).toISOString()
