@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * Passo 2 do OAuth: troca o código por tokens, liga a conta ao leaderboard e
- * agenda a importação dos clips e abre a página de sucesso.
+ * agenda a importação dos clips e volta à página da competição com o pop-up "Inscrição feita".
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.redirect(payload.recap
       ? `${origin}/${payload.slug}/recap${payload.recapMonth ? `?mes=${payload.recapMonth}` : ''}`
-      : `${origin}/join/${payload.slug}/sucesso?p=${participantId}`)
+      : `${origin}/${payload.slug}?entrou=1`)
     response.cookies.set(CLIPPER_COOKIE, makeClipperSession(participantId), {
       httpOnly: true, sameSite: 'lax', secure: origin.startsWith('https'), path: '/', maxAge: 7 * 86400,
     })

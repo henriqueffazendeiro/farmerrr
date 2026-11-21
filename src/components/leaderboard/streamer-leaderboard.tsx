@@ -54,6 +54,8 @@ type Props = {
   clockTarget?: string | null
   /** Clipper que já participa nesta competição: as definições dele (no lugar do "Participar"). */
   clipperSettings?: ReactNode
+  /** Abre as definições logo ao carregar (ex.: um aviso do levantamento para o clipper ler). */
+  settingsOpen?: boolean
 }
 
 function Portrait({ src, name, className = '' }: { src: string | null; name: string; className?: string }) {
@@ -170,14 +172,21 @@ function CompetitionClock({ target, onEnd }: { target: string; onEnd?: () => voi
   </div>
 }
 
-export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings }: Props) {
+export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings, settingsOpen: openSettingsFirst = false }: Props) {
   // O contador que chegou a zero (quando o servidor manda o do mês seguinte, deixa de contar como terminado).
   // clockTarget null: sem contador (competição de data fixa que já acabou).
   const clockFor = clockTarget !== undefined ? clockTarget : lb.ends_at
   const [endedClock, setEndedClock] = useState<string | null>(null)
   const endClock = useCallback(() => setEndedClock(clockFor), [clockFor])
   const shownPrize = prizeDue ?? (endedClock != null && endedClock === clockFor ? prizeNext : null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(openSettingsFirst)
+  // O aviso fica nas definições; o endereço deixa de o ter (atualizar a página não volta a abri-las).
+  useEffect(() => {
+    if (!openSettingsFirst) return
+    const url = new URL(window.location.href)
+    url.searchParams.delete('premios')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+  }, [openSettingsFirst])
   const [rulesOpen, setRulesOpen] = useState(false)
   const [selectedClipper, setSelectedClipper] = useState<ClipperRow | null>(null)
   const isActive = lb.status === 'active'

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 /** O link do formulário do Stripe expirou (ou o clipper recarregou a página): cria um novo e volta lá. */
 export async function GET(request: NextRequest) {
   const slug = request.nextUrl.searchParams.get('lb') || ''
-  const back = new URL(`/join/${encodeURIComponent(slug)}/conta`, request.url)
+  const back = new URL(`/${encodeURIComponent(slug)}`, request.url)
   const member = await getClipperMembership(slug)
   if (!member) return NextResponse.redirect(new URL(`/join/${encodeURIComponent(slug)}`, request.url))
   try {

@@ -51,7 +51,8 @@ export async function markPrizesManualAction(form: FormData) {
  */
 export async function withdrawPrizesAction(form: FormData) {
   const slug = text(form, 'slug')
-  const back = `/join/${encodeURIComponent(slug)}/conta`
+  // Volta sempre à página da competição: o "Prémio levantado" abre num pop-up, os avisos nas definições.
+  const back = `/${encodeURIComponent(slug)}`
   const member = await getClipperMembership(slug)
   if (!member) redirect(`/join/${encodeURIComponent(slug)}`)
   if (!prizesConfigured()) redirect(`${back}?premios=indisponivel`)
@@ -61,7 +62,7 @@ export async function withdrawPrizesAction(form: FormData) {
     if (!account.transfers_enabled) next = await onboardingUrl(account.stripe_account_id, slug)
     else {
       const { sentCents, failed } = await withdrawPrizes(member.participant.clipper_profile_id, account.stripe_account_id)
-      next = `${back}?premios=${failed ? 'erro' : sentCents ? 'enviado' : 'nada'}`
+      next = `${back}?premios=${failed ? 'erro' : sentCents ? `enviado&valor=${sentCents}` : 'nada'}`
     }
   } catch (error) {
     console.error('[prize withdraw]', error instanceof Error ? error.message : error)
@@ -76,7 +77,7 @@ export async function openPayoutDashboardAction(form: FormData) {
   const member = await getClipperMembership(slug)
   if (!member) redirect(`/join/${encodeURIComponent(slug)}`)
   const account = await payoutAccount(member.participant.clipper_profile_id)
-  let next = `/join/${encodeURIComponent(slug)}/conta?premios=erro`
+  let next = `/${encodeURIComponent(slug)}?premios=erro`
   if (account?.details_submitted) {
     try { next = await expressDashboardUrl(account.stripe_account_id) }
     catch (error) { console.error('[prize dashboard]', error instanceof Error ? error.message : error) }

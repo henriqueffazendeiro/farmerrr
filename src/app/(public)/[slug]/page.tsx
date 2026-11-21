@@ -13,12 +13,14 @@ import { creatorHasAccess } from '@/lib/billing/stripe'
 import { OwnerPausedOverlay, PausedPage } from '@/components/billing/paused'
 import { duePrize, upcomingPrize } from '@/lib/prizes/payments'
 import { ClipperSettingsView, clipperSettingsData } from '@/components/clipper/clipper-settings'
+import { prizeNotices } from '@/components/prizes/clipper-prizes'
+import { money } from '@/lib/format'
 
 export const revalidate = 60
 
 type Props = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ periodo?: string; ordem?: string; criada?: string }>
+  searchParams: Promise<{ periodo?: string; ordem?: string; criada?: string; entrou?: string; premios?: string; valor?: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -31,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicLeaderboardPage({ params, searchParams }: Props) {
   const { slug } = await params
-  const { periodo, ordem, criada } = await searchParams
+  const { periodo, ordem, criada, entrou, premios, valor } = await searchParams
   const leaderboard = await getLeaderboardBySlug(slug)
   if (!leaderboard) notFound()
   const periods = availablePeriods(leaderboard)
@@ -99,12 +101,24 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
     const tagged = byLiveDate.get(live.date) ?? []
     return { ...live, clips: tagged.slice(0, 24), clipCount: tagged.length }
   })
+  // Clipper de volta de um levantamento: "enviado" abre o pop-up de parabéns; os outros avisos abrem as definições.
+  const withdrawn = clipperData && premios === 'enviado'
+  const withdrawnCents = Number(valor)
+  const clipperNotice = clipperData && premios && premios !== 'enviado' && prizeNotices[premios] ? premios : undefined
   return <>{!access && <OwnerPausedOverlay slug={leaderboard.slug} />}<StreamerLeaderboard leaderboard={leaderboard} creator={creator} datasets={datasets} join={joinFormProps(leaderboard)}
     isOwner={isOwner} settingsContent={settingsContent} prizeDue={prizeDue} prizeNext={prizeNext} clockTarget={currentPeriodEnd(leaderboard)}
-    clipperSettings={clipperData ? <ClipperSettingsView data={clipperData} /> : undefined}
+    clipperSettings={clipperData ? <ClipperSettingsView data={clipperData} premios={clipperNotice} /> : undefined}
+    settingsOpen={clipperNotice != null}
     clippers={clippers} totals={totals} rewards={rewards}
     periods={periods} periodKey={periodKey}
     sort={ordem === 'media' ? 'media' : 'views'} demo={isDemoLeaderboard(leaderboard.id)} lives={lives} clips={clips} isLive={lives.some(live => live.isLive)} />
     {isOwner && criada === '1' && <PageReady />}
+    {clipperData && entrou === '1' && <PageReady param="entrou" title="Inscrição feita"
+      description="A conta do TikTok está ligada."
+      action="Ver ranking" />}
+    {withdrawn && <PageReady param={['premios', 'valor']} title="Prémio levantado" celebration="money"
+      image="https://cdn.7tv.app/emote/01HRBKB9T000072EX513ZQ4552/4x.png"
+      description={`Parabéns! ${Number.isFinite(withdrawnCents) && withdrawnCents > 0 ? money(withdrawnCents) : 'O prémio'} a caminho do IBAN. O dinheiro chega em poucos dias úteis.`}
+      action="Fechar" />}
   </>
 }

@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   const slug = request.nextUrl.searchParams.get('lb') || ''
-  const back = new URL(`/join/${encodeURIComponent(slug)}/conta`, request.url)
+  const back = new URL(`/${encodeURIComponent(slug)}`, request.url)
   const member = await getClipperMembership(slug)
   if (!member) return NextResponse.redirect(new URL(`/join/${encodeURIComponent(slug)}`, request.url))
   let notice = 'pendente'
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     if (account.transfers_enabled) {
       const { sentCents, failed } = await withdrawPrizes(member.participant.clipper_profile_id, account.stripe_account_id)
       notice = failed ? 'erro' : sentCents ? 'enviado' : 'ligada'
+      if (notice === 'enviado') back.searchParams.set('valor', String(sentCents))
     } else if (!account.details_submitted) notice = 'incompleto'
   } catch (error) {
     console.error('[stripe connect retorno]', error instanceof Error ? error.message : error)
