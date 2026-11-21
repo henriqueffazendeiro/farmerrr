@@ -43,4 +43,7 @@ test('Monthly boards can pay past months only; fixed boards only after they end'
   assert.deepEqual(model.closedPeriods(fixed, ['all'], 'all', Date.parse('2026-10-31T00:00:00Z')), []);
   assert.deepEqual(model.closedPeriods(fixed, ['all'], 'all', Date.parse('2026-11-02T00:00:00Z')), ['all']);
   assert.deepEqual(model.closedPeriods({ ...fixed, ends_at: null, status: 'ended' }, ['all'], 'all'), ['all']);
+  const endedMonthly = { period_mode: 'monthly', ends_at: '2026-11-21T15:24:00Z', status: 'active' };
+  assert.deepEqual(model.closedPeriods(endedMonthly, ['2026-11', '2026-10'], '2026-11', Date.parse('2026-11-21T16:00:00Z')), ['2026-11', '2026-10']);
+  assert.deepEqual(model.closedPeriods(endedMonthly, ['2026-11', '2026-10'], '2026-11', Date.parse('2026-11-21T15:00:00Z')), ['2026-10']);
 });

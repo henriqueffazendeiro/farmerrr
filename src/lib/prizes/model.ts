@@ -41,7 +41,8 @@ export function closedPeriods(
   periodKeys: string[], currentKey: string, now = Date.now(),
 ): string[] {
   const keys = [...new Set(periodKeys)]
-  if (lb.period_mode === 'monthly') return keys.filter(key => /^\d{4}-\d{2}$/.test(key) && key < currentKey).sort().reverse()
   const ended = lb.status !== 'active' || (lb.ends_at != null && new Date(lb.ends_at).getTime() <= now)
+  // Mensal: os meses passados; se a competição já acabou (data de fim), o mês atual também fecha.
+  if (lb.period_mode === 'monthly') return keys.filter(key => /^\d{4}-\d{2}$/.test(key) && (key < currentKey || (ended && key === currentKey))).sort().reverse()
   return ended && keys.includes(ALL_TIME) ? [ALL_TIME] : []
 }
