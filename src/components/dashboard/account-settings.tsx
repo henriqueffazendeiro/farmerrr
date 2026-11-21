@@ -11,16 +11,17 @@ export async function AccountSettings({ children }: { children?: ReactNode }) {
   return (
     <section id="conta" aria-label="Dados da conta e canais" className="scroll-mt-8 mb-6">
       <div>
-        <div className="flex flex-wrap items-end gap-6">
+        <div className="flex flex-wrap items-center gap-6 sm:items-end">
         {creator && <ProfileImage src={creator.avatar_url} name={creator.name} />}
-        <dl className="grid min-w-0 flex-1 gap-6 text-sm sm:grid-cols-2">
+        {/* No telemóvel só o nome e o email, sem os títulos. */}
+        <dl className="grid min-w-0 flex-1 gap-1 text-sm sm:grid-cols-2 sm:gap-6">
           <div>
-            <dt className="text-xs text-fg-muted">Nome da conta</dt>
-            <dd className="mt-1.5 break-words">{profile?.display_name || '—'}</dd>
+            <dt className="text-xs text-fg-muted max-sm:sr-only">Nome da conta</dt>
+            <dd className="break-words sm:mt-1.5">{profile?.display_name || '—'}</dd>
           </div>
           <div>
-            <dt className="text-xs text-fg-muted">Email de acesso</dt>
-            <dd className="mt-1.5 break-all">{profile?.email || user?.email || '—'}</dd>
+            <dt className="text-xs text-fg-muted max-sm:sr-only">Email de acesso</dt>
+            <dd className="break-all max-sm:text-fg-muted sm:mt-1.5">{profile?.email || user?.email || '—'}</dd>
           </div>
         </dl>
         </div>

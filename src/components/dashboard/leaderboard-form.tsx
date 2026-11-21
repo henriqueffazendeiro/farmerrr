@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { useFormStatus } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 import { useProfileImageDraft } from './profile-image-draft'
 import { AlertCircle, Plus, Trash2 } from 'lucide-react'
@@ -11,24 +10,10 @@ import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Container } from '@/components/ui/container'
 import { slugify } from '@/lib/slug'
+import { SaveFooter } from '@/components/ui/save-footer'
 import { MAX_REWARD_POSITIONS, REWARD_POSITIONS } from '@/lib/leaderboards/reward-positions'
 
 
-function SaveFooter({ label, dirty, saved }: { label: string; dirty: boolean; saved: boolean }) {
-  const { pending } = useFormStatus()
-  return (
-    <footer className="fixed inset-x-0 bottom-0 z-30 bg-canvas/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
-      <Container className="flex min-h-20 items-center justify-between gap-4 py-4">
-        <p role="status" className="text-xs text-fg-muted">
-          {pending ? 'A guardar…' : dirty ? 'Alterações por guardar' : saved ? 'Alterações guardadas' : 'Sem alterações'}
-        </p>
-        <Button type="submit" variant={dirty ? 'primary' : 'secondary'} disabled={!dirty || pending} className="border-0">
-          {pending ? 'A guardar…' : label}
-        </Button>
-      </Container>
-    </footer>
-  )
-}
 
 type Props = {
   mode: 'create' | 'edit'

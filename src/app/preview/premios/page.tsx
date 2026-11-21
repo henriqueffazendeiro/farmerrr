@@ -47,7 +47,9 @@ export default async function PrizeDuePreviewPage({ searchParams }: { searchPara
       discord: 'clipsdoluis', email: 'luis@exemplo.com', needsReauth: false,
       prizes: [demoPrize('outubro', {}),
         demoPrize('setembro', { title: 'Prémios de Setembro', position: 2, amount_cents: 23750, fee_cents: 1250, status: 'paid' }),
-        demoPrize('agosto', { title: 'Prémios de Agosto', position: 3, amount_cents: 10000, fee_cents: 0, status: 'paid', manual: true })],
+        demoPrize('agosto', { title: 'Prémios de Agosto', position: 3, amount_cents: 10000, fee_cents: 0, status: 'paid', manual: true }),
+        demoPrize('julho', { title: 'Prémios de Julho', position: 1, amount_cents: 47500, fee_cents: 2500, status: 'paid' }),
+        demoPrize('junho', { title: 'Prémios de Junho', position: 2, amount_cents: 23750, fee_cents: 1250, status: 'paid' })],
       payoutAccount: { transfers_enabled: true, details_submitted: true },
     }} /> : undefined}
     periods={periods} periodKey={periods[0]} sort="views" demo isOwner={asOwner} clockTarget={asOwner ? undefined : new Date(Date.now() + 9 * 86400000 + 5 * 3600000).toISOString()}

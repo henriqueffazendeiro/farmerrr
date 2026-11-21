@@ -6,35 +6,30 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { CLIPPER_COOKIE } from '@/lib/recap/session'
 import { getClipperMembership } from './session'
 
-export type DiscordState = { ok?: boolean; error?: string }
+export type ContactState = { ok?: boolean; error?: string; errors?: { discord?: string; email?: string } }
 
-/** Nome de utilizador do Discord (novo formato, ou o antigo nome#1234). Vazio apaga. */
+/** Nome de utilizador do Discord (novo formato, ou o antigo nome#1234). */
 const DISCORD = /^[A-Za-z0-9_.]{2,32}(#\d{4})?$/
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
-export async function saveClipperDiscordAction(_previous: DiscordState, form: FormData): Promise<DiscordState> {
+/**
+ * Discord (visível para o streamer) e email (privado, para avisar de prémios) do clipper. Vazio apaga.
+ * Guardados juntos pelo "Guardar alterações" das definições.
+ */
+export async function saveClipperContactAction(_previous: ContactState, form: FormData): Promise<ContactState> {
   const member = await getClipperMembership(String(form.get('slug') || ''))
   if (!member) return { error: 'A sessão terminou. Entre novamente com o TikTok.' }
   const discord = String(form.get('discord') ?? '').trim().replace(/^@/, '')
-  if (discord && !DISCORD.test(discord)) return { error: 'Nome de utilizador do Discord inválido.' }
-  const { error } = await createAdminClient().from('clipper_profiles')
-    .update({ discord: discord || null }).eq('id', member.participant.clipper_profile_id)
-  return error ? { error: 'Não foi possível guardar. Tente novamente.' } : { ok: true }
-}
-
-const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
-
-/** Email do clipper (privado): para o avisar quando tiver um prémio para levantar. Vazio apaga. */
-export async function saveClipperEmailAction(_previous: DiscordState, form: FormData): Promise<DiscordState> {
-  const member = await getClipperMembership(String(form.get('slug') || ''))
-  if (!member) return { error: 'A sessão terminou. Entre novamente com o TikTok.' }
   const email = String(form.get('email') ?? '').trim().toLowerCase()
-  if (email && (email.length > 254 || !EMAIL.test(email))) return { error: 'Email inválido.' }
+  const errors: NonNullable<ContactState['errors']> = {}
+  if (discord && !DISCORD.test(discord)) errors.discord = 'Nome de utilizador do Discord inválido.'
+  if (email && (email.length > 254 || !EMAIL.test(email))) errors.email = 'Email inválido.'
+  if (errors.discord || errors.email) return { errors }
   const { error } = await createAdminClient().from('clipper_profiles')
-    .update({ email: email || null }).eq('id', member.participant.clipper_profile_id)
+    .update({ discord: discord || null, email: email || null }).eq('id', member.participant.clipper_profile_id)
   return error ? { error: 'Não foi possível guardar. Tente novamente.' } : { ok: true }
 }
 
-/** "Terminar sessão" do clipper: apaga a sessão e volta à página da competição (com "Participar"). */
 export async function clipperSignOutAction(form: FormData) {
   const slug = String(form.get('slug') || '')
   ;(await cookies()).delete(CLIPPER_COOKIE)

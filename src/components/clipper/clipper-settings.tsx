@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { DiscordIcon, TikTokIcon } from '@/components/ui/discord-icon'
 import { clipperSignOutAction } from '@/lib/clippers/actions'
 import { getClipperMembership } from '@/lib/clippers/session'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -8,7 +9,7 @@ import { ClipperPrizesView, prizeNotices } from '@/components/prizes/clipper-pri
 import { prizesConfigured } from '@/lib/prizes/payments'
 import { clipperPrizes, payoutAccount, type ClipperPrize } from '@/lib/prizes/payouts'
 import type { ClipperPayoutAccount } from '@/lib/db/types'
-import { DiscordField, EmailField } from './discord-field'
+import { ClipperContactForm } from './discord-field'
 
 export type ClipperSettingsData = {
   slug: string
@@ -25,7 +26,7 @@ export type ClipperSettingsData = {
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="mt-6 pt-6">
+  return <section className="mt-6 flex min-h-0 flex-col">
     <h3 className="mb-1.5 text-xs text-fg-muted">{title}</h3>
     {children}
   </section>
@@ -36,13 +37,19 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * e "Terminar sessão". Usadas no painel lateral da página do streamer e na página /join/…/conta.
  */
 export function ClipperSettingsView({ data, premios, preview = false }: { data: ClipperSettingsData; premios?: string; preview?: boolean }) {
-  return <div>
-    <section aria-label="Conta" className="mb-6">
-      <div className="flex flex-wrap items-end gap-6">
+  // Coluna com a altura do painel: os ganhos encolhem se faltar espaço e o "Terminar sessão" fica no fundo.
+  return <div className="flex flex-col">
+    <section aria-label="Conta" className="mb-6 shrink-0">
+      <div className="flex flex-wrap items-center gap-6">
         <Avatar src={data.avatarUrl} name={data.displayName} size="lg" className="rounded-sm border-0" />
-        <dl className="min-w-0 flex-1 text-sm">
-          <dt className="text-xs text-fg-muted">TikTok</dt>
-          <dd className="mt-1.5 break-words">{data.username ? `@${data.username}` : data.displayName}</dd>
+        <dl className="min-w-0 flex-1 space-y-1 text-sm">
+          <dt className="sr-only">TikTok</dt>
+          <dd className="flex items-center gap-1.5 break-all"><TikTokIcon className="shrink-0" />{data.username ? `@${data.username}` : data.displayName}</dd>
+          {/* Discord por baixo do TikTok (só quando está preenchido). */}
+          {data.discord && <>
+            <dt className="sr-only">Discord</dt>
+            <dd className="flex items-center gap-1.5 break-all"><DiscordIcon className="shrink-0 text-[#5865f2]" />{data.discord}</dd>
+          </>}
         </dl>
       </div>
       {data.needsReauth && <p className="mt-4 text-sm text-gold">
@@ -51,15 +58,14 @@ export function ClipperSettingsView({ data, premios, preview = false }: { data: 
       </p>}
     </section>
 
-    <DiscordField slug={data.slug} value={data.discord} preview={preview} />
-    <EmailField slug={data.slug} value={data.email} preview={preview} />
+    <ClipperContactForm slug={data.slug} discord={data.discord} email={data.email} preview={preview} />
 
     {data.prizes && <Section title="Ganhos">
       {premios && prizeNotices[premios] && <p role="status" className="mb-2 text-sm">{prizeNotices[premios]}</p>}
       <ClipperPrizesView prizes={data.prizes} account={data.payoutAccount} slug={data.slug} preview={preview} />
     </Section>}
 
-    <section aria-label="Sessão" className="mt-6 pt-6">
+    <section aria-label="Sessão" className="mt-auto shrink-0 pt-3">
       <form action={preview ? undefined : clipperSignOutAction}>
         <input type="hidden" name="slug" value={data.slug} />
         <Button type={preview ? 'button' : 'submit'} variant="danger" className="w-full border-0 bg-danger/10 hover:bg-danger/20">Terminar sessão</Button>

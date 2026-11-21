@@ -89,7 +89,6 @@ export function PrizeDueBanner({ prize, leaderboardId, returnTo }: { prize: DueP
   if (prize.processing) return <div className={`${summary.prizeDue} ${summary.prizeDueStatic}`} role="status">
     <Hyperspace className={summary.prizeDueSpace} starCount={260} />
     <span className={summary.prizeDueCopy}>
-      <span className={summary.prizeDueEyebrow}>{prize.periodName} terminou</span>
       <span className={summary.prizeDueTitle}>Pagamento em processamento</span>
       <span className={summary.prizeDueText}>Os prémios ficam disponíveis assim que a referência Multibanco for paga.</span>
     </span>
@@ -98,8 +97,7 @@ export function PrizeDueBanner({ prize, leaderboardId, returnTo }: { prize: DueP
     <button type="button" className={summary.prizeDue} onClick={() => setOpen(true)} aria-haspopup="dialog">
       <Hyperspace className={summary.prizeDueSpace} starCount={260} />
       <span className={summary.prizeDueCopy}>
-        <span className={summary.prizeDueEyebrow}>{prize.periodName} terminou</span>
-        <span className={summary.prizeDueTitle}>Hora de entregar os prémios</span>
+        <span className={summary.prizeDueTitle}>Entrega de prémios</span>
         <span className={summary.prizeDueText}>{prize.winners.length} {prize.winners.length === 1 ? 'vencedor' : 'vencedores'} do mês.</span>
       </span>
     </button>

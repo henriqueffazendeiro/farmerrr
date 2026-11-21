@@ -64,7 +64,7 @@
 .drawerIdentity a { display: flex; align-items: center; gap: 4px; color: var(--color-fg-muted); font-size: 13px; font-weight: 500; }
 .drawerIdentity a:hover { color: var(--color-fg); }
 .handles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.discord { display: flex; align-items: center; gap: 5px; color: var(--color-fg-muted); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.discord { display: flex; align-items: center; gap: 5px; margin-left: auto; min-width: 0; color: var(--color-fg-muted); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
 .discord svg { flex-shrink: 0; color: #5865f2; }
 .drawerStats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; gap: 8px; margin-bottom: 28px; }
 .drawerStats .featured { grid-column: 1 / -1; }

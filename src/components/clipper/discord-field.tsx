@@ -1,47 +1,58 @@
 'use client'
 
-import { useActionState, useRef } from 'react'
-import { saveClipperDiscordAction, saveClipperEmailAction, type DiscordState } from '@/lib/clippers/actions'
+import { useActionState, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { AlertCircle } from 'lucide-react'
+import { saveClipperContactAction, type ContactState } from '@/lib/clippers/actions'
+import { SaveFooter } from '@/components/ui/save-footer'
 
-type FieldProps = { slug: string; value: string | null; preview?: boolean }
+const normalizeDiscord = (value: string) => value.trim().replace(/^@/, '')
+const normalizeEmail = (value: string) => value.trim().toLowerCase()
 
-/** Campo das definições do clipper que guarda sozinho ao sair do campo (ou com Enter). */
-function AutoSaveField({ slug, value, preview, name, label, placeholder, hint, maxLength, type = 'text', save, normalize }: FieldProps & {
-  name: string; label: string; placeholder: string; hint: string; maxLength: number; type?: 'text' | 'email'
-  save: (previous: DiscordState, form: FormData) => Promise<DiscordState>; normalize: (value: string) => string
+function Field({ name, label, value, onChange, placeholder, hint, error, maxLength, type = 'text' }: {
+  name: string; label: string; value: string; onChange: (value: string) => void; placeholder: string
+  hint: string; error?: string; maxLength: number; type?: 'text' | 'email'
 }) {
-  const form = useRef<HTMLFormElement>(null)
-  const saved = useRef(value ?? '')
-  const [state, action, pending] = useActionState<DiscordState, FormData>(async (previous, data) => {
-    if (preview) return { ok: true }
-    const result = await save(previous, data)
-    if (result.ok) saved.current = normalize(String(data.get(name) ?? ''))
+  return <div className="mt-5 first:mt-0">
+    <label htmlFor={name} className="mb-1.5 block text-xs text-fg-muted">{label}</label>
+    <input id={name} name={name} type={type} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder}
+      maxLength={maxLength} autoComplete={type === 'email' ? 'email' : 'off'} spellCheck={false} aria-invalid={error ? true : undefined}
+      className="w-full rounded-sm border-0 bg-surface-2 px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-subtle transition-colors hover:bg-surface-3 focus:bg-surface-3 focus:outline-none" />
+    <p className={`mt-1.5 text-[11px] leading-relaxed ${error ? 'text-danger' : 'text-fg-subtle'}`}>{error ?? hint}</p>
+  </div>
+}
+
+/**
+ * Discord (visível para o streamer) e email (privado) do clipper, guardados com a barra
+ * "Guardar alterações" em baixo, como nas definições do streamer.
+ */
+export function ClipperContactForm({ slug, discord, email, preview }: { slug: string; discord: string | null; email: string | null; preview?: boolean }) {
+  const router = useRouter()
+  const [values, setValues] = useState({ discord: discord ?? '', email: email ?? '' })
+  const snapshot = (v: typeof values) => JSON.stringify([normalizeDiscord(v.discord), normalizeEmail(v.email)])
+  const [saved, setSaved] = useState(() => snapshot(values))
+  const dirty = snapshot(values) !== saved
+  const [state, action] = useActionState<ContactState, FormData>(async (previous, data) => {
+    const submitted = snapshot({ discord: String(data.get('discord') ?? ''), email: String(data.get('email') ?? '') })
+    const result = preview ? { ok: true } : await saveClipperContactAction(previous, data)
+    if (result.ok) {
+      setSaved(submitted)
+      if (!preview) router.refresh()
+    }
     return result
   }, {})
 
-  return <form ref={form} action={action} className="mt-5 first:mt-0">
+  return <form action={action}>
     <input type="hidden" name="slug" value={slug} />
-    <label htmlFor={name} className="mb-1.5 block text-xs text-fg-muted">{label}</label>
-    <input id={name} name={name} type={type} defaultValue={value ?? ''} placeholder={placeholder} maxLength={maxLength}
-      autoComplete={type === 'email' ? 'email' : 'off'} spellCheck={false}
-      onBlur={event => { if (normalize(event.currentTarget.value) !== saved.current) form.current?.requestSubmit() }}
-      className="w-full rounded-sm border-0 bg-surface-2 px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-subtle transition-colors hover:bg-surface-3 focus:bg-surface-3 focus:outline-none" />
-    <p role="status" className={`mt-1.5 text-[11px] leading-relaxed ${state.error ? 'text-danger' : 'text-fg-subtle'}`}>
-      {pending ? 'A guardar…' : state.error ?? (state.ok ? 'Guardado.' : hint)}
-    </p>
+    <Field name="discord" label="Discord" value={values.discord} onChange={discord => setValues(v => ({ ...v, discord }))}
+      placeholder="nome de utilizador" maxLength={40} error={state.errors?.discord}
+      hint="Visível para o streamer combinar a entrega dos prémios." />
+    <Field name="email" type="email" label="Email" value={values.email} onChange={email => setValues(v => ({ ...v, email }))}
+      placeholder="nome@exemplo.com" maxLength={254} error={state.errors?.email}
+      hint="Privado, só para avisar de prémios para levantar." />
+    {state.error && <p className="mt-5 flex items-start gap-2 rounded-sm border border-danger/25 bg-danger/8 px-3 py-2.5 text-sm text-danger">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />{state.error}
+    </p>}
+    <SaveFooter label="Guardar alterações" dirty={dirty} saved={Boolean(state.ok) && !dirty} />
   </form>
-}
-
-/** "Discord": visível para o streamer, para combinar a entrega dos prémios. */
-export function DiscordField(props: FieldProps) {
-  return <AutoSaveField {...props} name="discord" label="Discord" placeholder="nome de utilizador" maxLength={40}
-    hint="Visível para o streamer, para combinar a entrega dos prémios." save={saveClipperDiscordAction}
-    normalize={value => value.trim().replace(/^@/, '')} />
-}
-
-/** "Email": privado, só para avisar quando houver um prémio para levantar. */
-export function EmailField(props: FieldProps) {
-  return <AutoSaveField {...props} name="email" type="email" label="Email" placeholder="nome@exemplo.com" maxLength={254}
-    hint="Só para avisar quando houver um prémio para levantar. Não é mostrado a ninguém." save={saveClipperEmailAction}
-    normalize={value => value.trim().toLowerCase()} />
 }

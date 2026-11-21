@@ -10,8 +10,7 @@
 .prizeDueSpace { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .prizeDue::after { content: ''; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, color-mix(in srgb, var(--color-canvas) 94%, transparent) 0%, color-mix(in srgb, var(--color-canvas) 65%, transparent) 30%, transparent 70%), linear-gradient(0deg, var(--color-canvas) 0%, transparent 25%, transparent 75%, var(--color-canvas) 100%); }
 .prizeDueCopy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 672px; margin-inline: auto; }
-.prizeDueEyebrow { color: #a1a1aa; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
-.prizeDueTitle { color: var(--color-fg); font-size: 36px; line-height: 1.15; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; transition: color 150ms; }
+.prizeDueTitle { color: var(--color-fg); font-size: 52px; line-height: 1.1; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; transition: color 150ms; }
 .prizeDueText { color: var(--color-fg-muted); font-size: 15px; line-height: 1.5; }
 .prizeDue:hover .prizeDueTitle { color: #d4d4d8; }
 .prizeDueStatic { cursor: default; }
@@ -19,7 +18,7 @@
 .prizeDue:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: var(--radius-ui); }
 @media (max-width: 767px) {
   .prizeDue { padding: 32px 0; }
-  .prizeDueTitle { font-size: 28px; }
+  .prizeDueTitle { font-size: 36px; }
 }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .stat { min-width: 0; border: 0; border-radius: var(--radius-ui); padding: 16px; background: #141417; }

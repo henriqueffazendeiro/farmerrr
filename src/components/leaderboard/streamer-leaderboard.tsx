@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { LivesView } from '@/components/lives/LivesView'
 import type { Live } from '@/components/lives/scale'
 import type { LiveClip } from '@/components/lives/live-clips'
-import { Clock, Eye, Film, Gift, Heart, Settings, Users } from 'lucide-react'
+import { Clock, Eye, Film, Gift, Heart, Settings, UserRound, Users } from 'lucide-react'
 import type { DuePrize } from '@/lib/prizes/model'
 import { PrizeDueBanner } from '@/components/prizes/prize-due'
 import type { Creator, Leaderboard, Reward } from '@/lib/db/types'
@@ -276,8 +276,8 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
         </div>
         <div className={styles.headerActions}>
           {canJoin && <a className={styles.primaryButton} href={joinHref}>Participar</a>}
-          {(isOwner || isClipper) && <button type="button" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog" aria-label="Definições" title="Definições" className={styles.settingsLink}>
-            <Settings size={18} strokeWidth={1.5} aria-hidden="true" />
+          {(isOwner || isClipper) && <button type="button" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog" aria-label={isOwner ? 'Definições' : 'Conta'} title={isOwner ? 'Definições' : 'Conta'} className={styles.settingsLink}>
+            {isOwner ? <Settings size={18} strokeWidth={1.5} aria-hidden="true" /> : <UserRound size={18} strokeWidth={1.5} aria-hidden="true" />}
           </button>}
         </div>
       </div>
@@ -391,6 +391,6 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
     </SettingsDrawer>}
     {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)} />}
     {/* Depois de "Terminar sessão" já não há definições: o painel fecha sozinho. */}
-    {settingsOpen && (isOwner || isClipper) && <SettingsDrawer onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
+    {settingsOpen && (isOwner || isClipper) && <SettingsDrawer {...(isOwner ? {} : { title: 'Conta', closeLabel: 'Fechar conta', fixed: true })} onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
   </div>
 }
