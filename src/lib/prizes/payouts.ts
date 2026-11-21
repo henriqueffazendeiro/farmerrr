@@ -11,11 +11,14 @@ const appUrl = () => (publicEnv.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').
 /** leaderboardId/leaderboardName: a competição onde o prémio foi ganho (um clipper pode participar em várias). */
 export type ClipperPrize = PrizePayout & { title: string; leaderboardId: string | null; leaderboardName: string; manual: boolean }
 
-/** Prémios deste clipper (em todas as competições), mais recentes primeiro. */
-export async function clipperPrizes(clipperProfileId: string): Promise<ClipperPrize[]> {
+/**
+ * Prémios deste clipper numa competição (participantId: a participação nessa competição), mais recentes primeiro.
+ * Os ganhos de cada streamer nunca se misturam: cada página mostra e levanta só os seus.
+ */
+export async function clipperPrizes(clipperProfileId: string, participantId: string): Promise<ClipperPrize[]> {
   const db = createAdminClient()
   const { data: payouts, error } = await db.from('prize_payouts').select('*').eq('clipper_profile_id', clipperProfileId)
-    .in('status', ['available', 'transferring', 'paid']).order('created_at', { ascending: false })
+    .eq('participant_id', participantId).in('status', ['available', 'transferring', 'paid']).order('created_at', { ascending: false })
   if (error) throw error
   if (!payouts?.length) return []
   const { data: payments } = await db.from('prize_payments').select('id,leaderboard_id,period_key,method').in('id', [...new Set(payouts.map(p => p.payment_id))])
@@ -86,16 +89,17 @@ export async function expressDashboardUrl(stripeAccountId: string) {
 }
 
 /**
- * Transfere para a conta do clipper todos os prémios disponíveis. Cada prémio é "reservado" antes da transferência
+ * Transfere para a conta do clipper os prémios disponíveis desta competição (participantId).
+ * Cada prémio é "reservado" antes da transferência
  * (available → transferring) para dois cliques seguidos não pagarem duas vezes; a chave de idempotência garante o mesmo
  * no lado do Stripe. Um prémio preso em "transferring" (processo interrompido) volta a ser tentado após 5 minutos.
  * O Stripe envia depois o saldo para o IBAN do clipper, sozinho.
  */
-export async function withdrawPrizes(clipperProfileId: string, stripeAccountId: string) {
+export async function withdrawPrizes(clipperProfileId: string, stripeAccountId: string, participantId: string) {
   const db = createAdminClient()
   const stale = new Date(Date.now() - 5 * 60_000).toISOString()
   const { data: candidates, error } = await db.from('prize_payouts').select('id').eq('clipper_profile_id', clipperProfileId)
-    .or(`status.eq.available,and(status.eq.transferring,updated_at.lt.${stale})`)
+    .eq('participant_id', participantId).or(`status.eq.available,and(status.eq.transferring,updated_at.lt.${stale})`)
   if (error) throw error
   let sentCents = 0
   let failed = 0

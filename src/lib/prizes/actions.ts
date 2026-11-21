@@ -61,7 +61,7 @@ export async function withdrawPrizesAction(form: FormData) {
     const account = await ensurePayoutAccount(member.participant.clipper_profile_id)
     if (!account.transfers_enabled) next = await onboardingUrl(account.stripe_account_id, slug)
     else {
-      const { sentCents, failed } = await withdrawPrizes(member.participant.clipper_profile_id, account.stripe_account_id)
+      const { sentCents, failed } = await withdrawPrizes(member.participant.clipper_profile_id, account.stripe_account_id, member.participant.id)
       next = `${back}?premios=${failed ? 'erro' : sentCents ? `enviado&valor=${sentCents}` : 'nada'}`
     }
   } catch (error) {

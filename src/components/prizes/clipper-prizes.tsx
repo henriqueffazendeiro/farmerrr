@@ -25,8 +25,6 @@ export function ClipperPrizesView({ prizes, account, slug, preview = false }: {
   slug: string; preview?: boolean
 }) {
   const available = prizes.filter(p => p.status === 'available').reduce((sum, p) => sum + p.amount_cents, 0)
-  // Prémios de mais do que uma competição: cada linha diz de qual é.
-  const severalBoards = new Set(prizes.map(p => p.leaderboardId)).size > 1
   if (!prizes.length) return <p className="text-sm text-fg-subtle">Ainda sem prémios.</p>
   return (
     <div>
@@ -36,7 +34,6 @@ export function ClipperPrizesView({ prizes, account, slug, preview = false }: {
             <span className="min-w-0">
               <span className="block truncate font-medium">{prize.title.replace('Prémios de ', '')} · {prize.position}.º lugar</span>
               <span className="block truncate text-xs text-fg-subtle">
-                {severalBoards && prize.leaderboardName && `${prize.leaderboardName} · `}
                 {prize.manual ? 'Pago pelo streamer' : <>{prize.fee_cents > 0 && `${money(prize.amount_cents + prize.fee_cents, prize.currency)} − 5% · `}{statusLabel[prize.status]}</>}
               </span>
             </span>

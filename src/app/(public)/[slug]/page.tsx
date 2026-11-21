@@ -111,11 +111,10 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
   const withdrawnCents = Number(valor)
   const clipperNotice = clipperData && premios && premios !== 'enviado' && prizeNotices[premios] ? premios : undefined
   // Vencedor com prémio pago pelo site e ainda por levantar: pop-up com o botão "Levantar" (até levantar ou fechar).
-  // Só na página da competição onde ganhou. O botão levanta tudo o que houver (também de outras competições).
+  // Só os prémios desta competição (os ganhos de cada streamer nunca se misturam).
   const available = (clipperData?.prizes ?? []).filter(prize => prize.status === 'available')
   const availableCents = available.reduce((sum, prize) => sum + prize.amount_cents, 0)
-  const wonHereCents = available.filter(prize => prize.leaderboardId === leaderboard.id).reduce((sum, prize) => sum + prize.amount_cents, 0)
-  const showPrizeReady = wonHereCents > 0 && !premios && entrou !== '1'
+  const showPrizeReady = availableCents > 0 && !premios && entrou !== '1'
   return <>{!access && <OwnerPausedOverlay slug={leaderboard.slug} />}<StreamerLeaderboard leaderboard={leaderboard} creator={creator} datasets={datasets} join={joinFormProps(leaderboard)}
     isOwner={isOwner} settingsContent={settingsContent} prizeDue={prizeDue} prizeNext={prizeNext} clockTarget={currentPeriodEnd(leaderboard)}
     clipperSettings={clipperData ? <ClipperSettingsView data={clipperData} premios={clipperNotice} /> : undefined}
@@ -133,8 +132,7 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
       action="Fechar" />}
     {showPrizeReady && <PageReady param={[]} title="Prémio disponível" celebration="money"
       image="https://cdn.7tv.app/emote/01JV0DYKQZ8F4FJ7GPMM8RJP35/4x.gif"
-      description={wonHereCents === availableCents ? `Parabéns! ${money(availableCents)} prontos a levantar para o IBAN.`
-        : `Parabéns! ${money(wonHereCents)} desta competição, mais ${money(availableCents - wonHereCents)} de outras: ${money(availableCents)} prontos a levantar para o IBAN.`}
+      description={`Parabéns! ${money(availableCents)} prontos a levantar para o IBAN.`}
       action={`Levantar ${money(availableCents)}`}
       submit={{ action: withdrawPrizesAction, fields: { slug: leaderboard.slug }, pendingLabel: 'A abrir…' }}
       dismissKey={`prize-ready:${available.map(prize => prize.id).sort().join(',')}`} />}

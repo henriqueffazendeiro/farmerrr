@@ -78,7 +78,7 @@ export async function clipperSettingsData(slug: string): Promise<ClipperSettings
     createAdminClient().from('clipper_profiles').select('display_name,avatar_url,discord,email').eq('id', profileId).maybeSingle(),
     createAdminClient().from('social_accounts').select('avatar_url').eq('clipper_profile_id', profileId).eq('provider', 'tiktok').maybeSingle(),
     prizesConfigured()
-      ? Promise.all([clipperPrizes(profileId), payoutAccount(profileId)]).catch(() => [null, null] as const)
+      ? Promise.all([clipperPrizes(profileId, participant.id), payoutAccount(profileId)]).catch(() => [null, null] as const)
       : Promise.resolve([null, null] as const),
   ])
   return {
