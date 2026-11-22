@@ -391,6 +391,6 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
     </SettingsDrawer>}
     {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)} />}
     {/* Depois de "Terminar sessão" já não há definições: o painel fecha sozinho. */}
-    {settingsOpen && (isOwner || isClipper) && <SettingsDrawer {...(isOwner ? {} : { title: 'Conta', closeLabel: 'Fechar conta', fixed: true })} onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
+    {settingsOpen && (isOwner || isClipper) && <SettingsDrawer {...(isOwner ? {} : { title: 'Conta', closeLabel: 'Fechar conta' })} onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
   </div>
 }

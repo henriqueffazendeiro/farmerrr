@@ -40,9 +40,9 @@ export function ClipperPrizesView({ prizes, account, slug, preview = false }: {
   const withdrawn = sum(prizes.filter(p => p.status !== 'available'))
   if (!prizes.length) return <p className="text-sm text-fg-subtle">Ainda sem prémios.</p>
   return (
-    <div className="flex min-h-0 flex-col">
+    <div>
       {/* Mostra 3 prémios de cada vez; os restantes com scroll. */}
-      <ul className="max-h-[170px] min-h-[57px] divide-y divide-line/50 overflow-y-auto text-sm [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+      <ul className="max-h-[170px] divide-y divide-line/50 overflow-y-auto text-sm [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
         {prizes.map(prize => <li key={prize.id} className="flex items-center gap-3 py-2.5">
           {/* O lugar com a coroa de louros, como na tabela do ranking. */}
           <span className={`${ranking.position} ${prize.position <= 3 ? ranking[`rank${prize.position}`] : ''} !h-[30px] !w-[30px] shrink-0 [&>span]:!text-[11px] [&>svg]:!h-[26px] [&>svg]:!w-[30px]`} aria-label={`${prize.position}.º lugar`}>
@@ -58,12 +58,12 @@ export function ClipperPrizesView({ prizes, account, slug, preview = false }: {
         </li>)}
       </ul>
 
-      <dl className="shrink-0 space-y-2 border-t border-line/60 pt-3 text-sm">
+      <dl className="space-y-2 border-t border-line/60 pt-3 text-sm">
         <Row label="Total" value={money(available + withdrawn)} strong />
       </dl>
 
       {available > 0 && (
-        <form action={preview ? undefined : withdrawPrizesAction} className="mt-3 shrink-0">
+        <form action={preview ? undefined : withdrawPrizesAction} className="mt-3">
           <input type="hidden" name="slug" value={slug} />
           <Button type={preview ? 'button' : 'submit'} variant="secondary" className="w-full border-0">Levantar {money(available)}</Button>
           {!account?.transfers_enabled && (
