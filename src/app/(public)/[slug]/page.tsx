@@ -28,7 +28,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const lb = await getLeaderboardBySlug(slug)
-  if (!lb) return { title: 'Ranking não encontrado' }
+  if (!lb) return { title: 'Competição não encontrada' }
   return { title: lb.name, description: lb.description,
     ...(isDemoLeaderboard(lb.id) ? { robots: { index: false, follow: false } } : {}) }
 }
@@ -128,7 +128,7 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
       description="Os vencedores já podem levantar os prémios para o IBAN." action="Fechar" />}
     {clipperData && entrou === '1' && <PageReady param="entrou" title="Inscrição feita"
       description="A conta do TikTok está ligada."
-      action="Ver ranking" />}
+      action="Ver competição" />}
     {withdrawn && <PageReady param={['premios', 'valor']} title="Prémio levantado" celebration="money"
       image="https://cdn.7tv.app/emote/01HRBKB9T000072EX513ZQ4552/4x.png"
       description={`Parabéns! ${Number.isFinite(withdrawnCents) && withdrawnCents > 0 ? money(withdrawnCents) : 'O prémio'} a caminho do IBAN. O dinheiro chega em poucos dias úteis.`}

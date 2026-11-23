@@ -10,7 +10,7 @@ export const streamerPrizeNotices: Record<string, string> = {
   pago: 'Pagamento recebido. Cada clipper já pode levantar o seu prémio.',
   processando: 'Pagamento em processamento (Multibanco pode demorar). Os clippers podem levantar assim que for confirmado.',
   duplicado: 'Estes prémios já tinham sido pagos — o pagamento repetido foi devolvido.',
-  erro: 'Não foi possível concluir. Tente novamente daqui a pouco.',
+  erro: 'Não foi possível concluir. Tenta novamente daqui a pouco.',
   indisponivel: 'Os pagamentos ainda não estão disponíveis.',
 }
 

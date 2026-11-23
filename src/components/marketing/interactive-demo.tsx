@@ -109,15 +109,15 @@ export function InteractiveDemo() {
             key={activeHref}
             ref={preview}
             src={activeHref}
-            title={showRecap ? 'Recap de setembro' : 'Demo do ranking de clippers de Luís Ferreira'}
+            title={showRecap ? 'Recap de setembro' : 'Demo da competição de clippers de Luís Ferreira'}
             loading="lazy"
             className={`block w-full border-0 bg-canvas ${expanded ? 'h-full' : 'h-[430px] sm:h-[850px]'}`}
           />
           <button
             type="button"
             onClick={() => setShowRecap(value => !value)}
-            aria-label={showRecap ? 'Voltar ao ranking' : 'Ver o recap'}
-            title={showRecap ? 'Voltar ao ranking' : 'Ver o recap'}
+            aria-label={showRecap ? 'Voltar à competição' : 'Ver o recap'}
+            title={showRecap ? 'Voltar à competição' : 'Ver o recap'}
             aria-pressed={showRecap}
             className={`absolute z-10 grid h-10 w-10 cursor-pointer place-items-center rounded-lg border border-white/10 bg-[#292929] text-white shadow-lg transition-colors hover:bg-[#3a3a3a] ${showRecap ? 'top-3 left-3' : 'bottom-4 right-4'}`}
           >

@@ -48,7 +48,7 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-fg-muted">
-              Juntamos streamers e clippers num ranking vivo, com views contadas,
+              Juntamos streamers e clippers numa competição ao vivo, com views contadas,
               competições partilháveis e momentos prontos para voltar à stream.
             </p>
           </div>

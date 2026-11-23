@@ -306,7 +306,7 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
         <div className={ranking.header}>
         <h2 id="ranking-title" className={styles.srOnly}>Classificação dos Clippers</h2>
         <div className={ranking.tableToolbar}>
-          <nav className={ranking.tabs} aria-label="Ordenação do ranking">
+          <nav className={ranking.tabs} aria-label="Ordenação da competição">
             <Link href={href(currentPeriod, 'views')} onClick={go(currentPeriod, 'views', 'views')} scroll={false} aria-current={shownTab === 'views' ? 'page' : undefined}>{periods.length > 1 ? 'Este mês' : 'Mais views'}</Link>
             <Link href={href(currentPeriod, 'media')} onClick={go(currentPeriod, 'media', 'media')} scroll={false} aria-current={shownTab === 'media' ? 'page' : undefined}>Maior média</Link>
             {periods.length > 1 && <Link href={href(ALL_TIME, 'views')} onClick={go(ALL_TIME, 'views', 'history')} scroll={false} aria-current={shownTab === 'history' ? 'page' : undefined}>De sempre</Link>}
@@ -380,14 +380,21 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
     </main>
 
     {rulesOpen && <SettingsDrawer title="Como funciona" closeLabel="Fechar regras" onClose={() => setRulesOpen(false)}>
-      <div className={styles.rulesContent} style={{ marginTop: 0 }}>
-        <p>Conecta a tua conta de TikTok.</p>
-        <p>Publica clips originais das streams de {name}.</p>
-        <p>Mantém os vídeos públicos para entrarem na contagem.</p>
-        <p>Os clips publicados durante o mês entram automaticamente no ranking.</p>
-        <p>Views compradas, conteúdo duplicado ou vídeos fora do tema podem levar à desqualificação.</p>
-        <p>No final do mês, consulta a classificação final e, caso tenhas direito a prémio, recebe-o de acordo com as condições definidas.</p>
-      </div>
+      <ol className={styles.rulesSteps}>
+        <li><strong>1. Entra com o TikTok</strong>
+          <p>Clica em “Participar” e entra com a tua conta de TikTok. Não precisas de fazer mais nada: os teus vídeos passam a ser contados automaticamente.</p></li>
+        <li><strong>2. Uma conta, um streamer</strong>
+          <p>Cada conta de TikTok só pode participar na competição de um streamer. Se fazes clips de vários streamers, usa uma conta diferente para cada um.</p></li>
+        <li><strong>3. Publica clips de {name}</strong>
+          <p>Contam os clips das streams de {name} publicados durante o mês. Os vídeos têm de estar públicos.</p></li>
+        <li><strong>4. Liga o clip à live com o #</strong>
+          <p>Escreve na descrição do clip o dia da live, por exemplo <b>#19/11</b>. A hashtag de cada live está na secção “Absolute Cinema”, por baixo da data: basta copiá-la. Assim o clip aparece nessa live.</p></li>
+        <li><strong>5. Sobe na competição</strong>
+          <p>A tabela é feita pelas visualizações dos teus clips e atualiza-se sozinha ao longo do dia.</p></li>
+        <li><strong>6. Recebe o prémio</strong>
+          <p>No fim do mês, os primeiros lugares recebem o prémio definido pelo streamer.</p></li>
+      </ol>
+      <p className={styles.rulesWarning}>Views compradas, clips copiados de outras pessoas ou vídeos que não são sobre {name} levam à desqualificação.</p>
     </SettingsDrawer>}
     {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)} />}
     {/* Depois de "Terminar sessão" já não há definições: o painel fecha sozinho. */}

@@ -25,11 +25,14 @@ export function Avatar({
   name,
   size = 'md',
   className,
+  onError,
 }: {
   src?: string | null
   name: string
   size?: Size
   className?: string
+  /** Só em componentes cliente: ex. trocar para as iniciais quando o link da foto expira. */
+  onError?: () => void
 }) {
   const cls = cn(
     'shrink-0 overflow-hidden rounded-full border border-line bg-surface-2',
@@ -42,7 +45,7 @@ export function Avatar({
     // <img> em vez de next/image: os avatares vêm de domínios variáveis e
     // não vale a pena o custo de otimização para imagens tão pequenas.
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={name} className={cls} loading="lazy" />
+    return <img src={src} alt={name} className={cls} loading="lazy" onError={onError} />
   }
 
   return (

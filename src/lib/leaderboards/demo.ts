@@ -11,10 +11,10 @@ export function demoLeaderboard(): Leaderboard {
   return {
     id: DEMO_ID, creator_id: DEMO_ID, slug: DEMO_SLUG,
     name: 'Batalha de Clippers', description: 'Os melhores momentos da stream. A próxima conquista é tua.',
-    announcement: 'A corrida está aberta. Publica os teus melhores clips e conquista o teu lugar no ranking.',
+    announcement: 'A corrida está aberta. Publica os teus melhores clips e conquista o teu lugar na competição.',
     quote: 'No fim do mês, os melhores clips merecem palco. Quero ver os vossos cortes, descobrir novos talentos e premiar quem faz a diferença.',
     quote_author: 'Mensagem de exemplo',
-    rules: 'Publica clips originais das streams de Luís Ferreira.\nApenas vídeos públicos no TikTok contam para a classificação.\nO ranking mensal considera os vídeos publicados durante o mês em curso.\nViews compradas, conteúdo duplicado e vídeos fora do tema podem levar à desqualificação.\nOs resultados e prémios são confirmados pelo streamer no final da competição.',
+    rules: 'Publica clips originais das streams de Luís Ferreira.\nApenas vídeos públicos no TikTok contam para a classificação.\nA tabela mensal considera os vídeos publicados durante o mês em curso.\nViews compradas, conteúdo duplicado e vídeos fora do tema podem levar à desqualificação.\nOs resultados e prémios são confirmados pelo streamer no final da competição.',
     cover_url: null, starts_at: new Date(Date.UTC(year, month - 3, 1)).toISOString(),
     ends_at: null, event_at: new Date(Date.UTC(year, month, 0, 20)).toISOString(),
     timezone: 'Europe/Lisbon', status: 'active', period_mode: 'monthly', platforms: ['tiktok'],

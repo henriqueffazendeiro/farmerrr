@@ -32,7 +32,7 @@ const sections: LegalSection[] = [
     content: <ul>
       <li>Streamer: titular de uma conta que organiza uma competição.</li>
       <li>Clipper: titular de uma conta TikTok que participa numa competição.</li>
-      <li>Competição: página pública com o ranking, as regras e os prémios definidos pelo Streamer.</li>
+      <li>Competição: página pública com a tabela, as regras e os prémios definidos pelo Streamer.</li>
       <li>Plataformas: serviços de terceiros integrados, como TikTok, Twitch, YouTube e Kick.</li>
     </ul>,
   },
@@ -64,7 +64,7 @@ const sections: LegalSection[] = [
     title: 'Descrição do Serviço',
     content: <>
       <p>
-        O Serviço apresenta o ranking dos Clippers de uma competição com base nas métricas públicas dos seus vídeos,
+        O Serviço apresenta a tabela dos Clippers de uma competição com base nas métricas públicas dos seus vídeos,
         mostra as lives do Streamer e gera resumos mensais (Recap).
       </p>
       <ul>

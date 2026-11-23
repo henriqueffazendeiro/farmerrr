@@ -10,9 +10,9 @@ export const prizeNotices: Record<string, string> = {
   enviado: 'Enviado. O dinheiro chega ao IBAN em poucos dias úteis.',
   ligada: 'Conta de pagamentos ligada.',
   pendente: 'O Stripe está a verificar os dados. Quando terminar, basta carregar outra vez em "Levantar".',
-  incompleto: 'Faltam alguns dados no formulário do Stripe. Carregue em "Levantar" para continuar.',
+  incompleto: 'Faltam alguns dados no formulário do Stripe. Carrega em "Levantar" para continuar.',
   nada: 'Não há prémios por levantar.',
-  erro: 'Não foi possível concluir o levantamento. Tente novamente daqui a pouco.',
+  erro: 'Não foi possível concluir o levantamento. Tenta novamente daqui a pouco.',
   indisponivel: 'Os levantamentos ainda não estão disponíveis.',
 }
 

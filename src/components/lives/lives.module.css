@@ -25,7 +25,11 @@
 .section .score strong { font-size: 18px; font-weight: 700; line-height: 1; }
 .section .score span { font-size: 15px; color: var(--muted); line-height: 1; }
 .section .title { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 32px; margin: 0 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.section .date { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+.section .date { color: var(--muted); font-size: 14px; margin: 0 0 8px; }
+.section .tag { margin: 0 0 18px; }
+.section .tag button { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 6px; padding: 8px 12px; border: 0; border-radius: var(--radius-ui); background: var(--surface-2); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
+.section .tag button svg { color: var(--muted); }
+.section .tag p { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.4; }
 .section .date::first-letter { text-transform: uppercase; }
 .section .voting { margin: 16px 0 8px; }
 .section .voteError { margin: 8px 0 0; font-size: 12px; color: #f87171; }

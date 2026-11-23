@@ -3,17 +3,33 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Geist } from 'next/font/google'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight, Film } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Copy, Film } from 'lucide-react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { dateOf, dayAt, demoLives, formatCount, formatScore, scaleFor, scoreOf, withVote, type Live } from './scale'
 import styles from './lives.module.css'
 import { LiveClips } from './LiveClips'
-import type { LiveClip } from './live-clips'
+import { liveTagFor, type LiveClip } from './live-clips'
 import { rateLive } from '@/lib/lives/actions'
 
 const geist = Geist({ subsets: ['latin'], display: 'swap' })
 const fixtures = demoLives()
 const starPath = 'M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z'
+
+/** Hashtag que associa um clip a esta live (lida da descrição por liveDateFromCaption). Clicar copia-a. */
+function LiveTag({ date }: { date: string }) {
+  const tag = liveTagFor(date)
+  const [copied, setCopied] = useState(false)
+  useEffect(() => { setCopied(false) }, [tag])
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(tag); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { /* sem permissão: o texto continua visível */ }
+  }
+  return <div className={styles.tag}>
+    <button type="button" onClick={copy} title="Copiar hashtag" aria-label={`Copiar ${tag}`}>
+      <span>{tag}</span>{copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+    </button>
+    <p>{copied ? 'Copiado! ' : ''}Põe na descrição do clip para o associar a esta live.</p>
+  </div>
+}
 
 function Star() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={starPath} /></svg>
@@ -188,6 +204,7 @@ export function LivesView({ demo, initialLives = [], timezone = 'Europe/Lisbon',
             {sameDayLives.map(item => <option key={item.id ?? item.date} value={item.id ?? item.date}>{item.platform ? `${item.platform} · ` : ''}{item.title}</option>)}
           </select>}
           <div className={styles.date}>{dateOf(live.date).toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+          <LiveTag date={live.date} />
           {!live.open && <p className={styles.closed}>{demo || live.count ? 'A votação desta live já fechou.' : live.isLive ? 'Esta transmissão está em direto.' : 'Transmissão terminada.'}</p>}
           {live.vod && <a className={styles.vod} href={live.vod} target="_blank" rel="noopener noreferrer">{vodLabel(live)}</a>}
         </div> : <p className={styles.closed}>Este mês ainda não tem lives. Escolhe outro mês.</p>}

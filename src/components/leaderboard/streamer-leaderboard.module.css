@@ -105,6 +105,11 @@
 .rulesDialog[open]::backdrop { animation: rulesBackdropEnter 220ms ease-out both; }
 .rulesContent { display: grid; gap: 14px; margin-top: 22px; color: #c4c4ce; font-size: 14px; line-height: 1.8; }
 .rulesContent p { margin: 0; }
+.rulesSteps { display: grid; gap: 18px; margin: 0; padding: 0; list-style: none; }
+.rulesSteps strong { display: block; color: var(--color-fg); font-size: 15px; line-height: 1.4; }
+.rulesSteps p { margin: 2px 0 0; color: var(--color-fg-muted); font-size: 14px; line-height: 1.6; }
+.rulesSteps b { color: var(--color-fg); font-weight: 600; }
+.rulesWarning { margin: 24px 0 0; padding: 12px 14px; border-radius: var(--radius-ui); background: var(--color-surface-2); color: #c4c4ce; font-size: 13px; line-height: 1.5; }
 @keyframes rulesDialogEnter { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes rulesBackdropEnter { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .page *, .page *::before, .page *::after, .rulesDialog::backdrop { transition: none !important; animation: none !important; } }

@@ -4,7 +4,7 @@ import { Container } from '@/components/ui/container'
 export default function LeaderboardLoading() {
   return (
     <Container className="py-10">
-      <div role="status" aria-busy="true" aria-label="A carregar ranking" className="animate-pulse">
+      <div role="status" aria-busy="true" aria-label="A carregar competição" className="animate-pulse">
         <div className="h-8 w-48 rounded-sm bg-surface" />
         <div className="mt-3 h-4 w-72 max-w-full rounded-sm bg-surface/70" />
         <div className="mt-10 space-y-2">

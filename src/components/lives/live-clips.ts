@@ -33,6 +33,11 @@ export function liveDateFromCaption(caption: string | null | undefined, publishe
   return iso(year)
 }
 
+/** Hashtag que um clipper põe na descrição para ligar o clip à live do dia `date` (AAAA-MM-DD): `#20/11`. */
+export function liveTagFor(date: string): string {
+  return `#${Number(date.slice(8, 10))}/${Number(date.slice(5, 7))}`
+}
+
 /** Bónus na nota da live pelos clips associados: cresce cada vez mais devagar, no máximo +1,0 (15 clips). */
 export const clipBonus = (count: number) => Math.min(1, Math.log2(1 + Math.max(0, count)) / 4)
 

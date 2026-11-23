@@ -35,7 +35,7 @@ const sections: LegalSection[] = [
       <LegalTable head={['Categoria', 'Dados', 'Origem']} rows={[
         ['Perfil TikTok', 'open_id, nome de utilizador, nome de apresentação, fotografia, ligação ao perfil, seguidores, gostos e número de vídeos', 'TikTok'],
         ['Vídeos', 'Identificador, ligação, miniatura, legenda, data, duração, visualizações, gostos, comentários e partilhas de vídeos públicos', 'TikTok'],
-        ['Participação', 'Competições, posição no ranking e estado da participação', 'Serviço'],
+        ['Participação', 'Competições, posição na competição e estado da participação', 'Serviço'],
         ['Recap', 'Vídeo enviado pelo vencedor mensal', 'Utilizador'],
       ]} />
       <h4>Visitantes</h4>
@@ -48,7 +48,7 @@ const sections: LegalSection[] = [
     content: <LegalTable head={['Finalidade', 'Fundamento (RGPD, art. 6.º, n.º 1)']} rows={[
       ['Gestão de contas, páginas e competições', 'Execução de contrato — al. b)'],
       ['Ligação ao TikTok e contagem de métricas', 'Execução de contrato — al. b)'],
-      ['Apresentação pública de rankings, vídeos e Recaps', 'Execução de contrato — al. b)'],
+      ['Apresentação pública das competições, vídeos e Recaps', 'Execução de contrato — al. b)'],
       ['Apresentação das lives do Streamer', 'Execução de contrato — al. b)'],
       ['Faturação e obrigações fiscais', 'Obrigação legal — al. c)'],
       ['Segurança e prevenção de fraude', 'Interesse legítimo — al. f)'],
@@ -114,7 +114,7 @@ const sections: LegalSection[] = [
       ['Conta de Streamer', 'Enquanto a conta estiver ativa; até 30 dias após pedido de eliminação'],
       ['Tokens de acesso do TikTok', 'Eliminados ao desligar a conta'],
       ['Restantes dados do Clipper', 'Até 30 dias após desligar a conta'],
-      ['Métricas e rankings', 'Enquanto a competição existir'],
+      ['Métricas e classificações das competições', 'Enquanto a competição existir'],
       ['Faturação', '10 anos (obrigação fiscal)'],
       ['Registos técnicos', 'Prazo definido pelo fornecedor de alojamento'],
     ]} />,

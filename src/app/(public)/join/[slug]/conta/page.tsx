@@ -20,6 +20,6 @@ export default async function ClipperAccount({ params, searchParams }: {
     <h1 className="mb-10 text-2xl font-semibold tracking-tight sm:text-3xl">Definições</h1>
     {isMockMode() && <p className="mb-6 text-sm text-gold">Demonstração: esta conta e os vídeos são simulados.</p>}
     <ClipperSettingsView data={data} premios={premios} />
-    <ButtonLink href={`/${slug}`} variant="secondary" className="mt-10 w-full border-0">Voltar ao ranking</ButtonLink>
+    <ButtonLink href={`/${slug}`} variant="secondary" className="mt-10 w-full border-0">Voltar à competição</ButtonLink>
   </main>
 }

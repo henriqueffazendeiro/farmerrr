@@ -103,7 +103,7 @@ export function RecapFilm({ data = demoFilm, sound = true }: { data?: FilmData; 
 
       {chapter === 5 && <div style={center}>
         <div style={{ width: 110, height: 110, background: orange, color: ink, display: 'grid', placeItems: 'center', fontSize: 70, fontWeight: 900, transform: `rotate(${45 + local * 4}deg)`, marginBottom: 45 }}><span style={{ transform: `rotate(${-45 - local * 4}deg)` }}>1</span></div>
-        <div style={kicker}>NO TOPO DO RANKING DE VIEWS</div>
+        <div style={kicker}>NO TOPO DA TABELA DE VIEWS</div>
         <h1 style={{ ...title, fontSize: portrait ? 68 : 125, maxWidth: '100%', overflowWrap: 'anywhere', color: orange }}>{data.winner}</h1>
         <p style={{ fontSize: portrait ? 26 : 36, lineHeight: 1.3, maxWidth: 760, ...inText(3) }}>O primeiro lugar tem um nome.<br />Esta história tem {data.people}.</p>
       </div>}

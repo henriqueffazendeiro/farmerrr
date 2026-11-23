@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: '%s · farmerrr',
   },
   description:
-    'Leaderboards automáticos para os teus clippers. As views são contadas pela API oficial do TikTok e o ranking atualiza-se sozinho.',
+    'Leaderboards automáticos para os teus clippers. As views são contadas pela API oficial do TikTok e a competição atualiza-se sozinha.',
   openGraph: {
     type: 'website',
     siteName: 'farmerrr',

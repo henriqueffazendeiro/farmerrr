@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CalendarDays, ExternalLink, Eye, Film, Gift, Heart, Play, Users } from 'lucide-react'
+import { CalendarDays, Eye, Film, Gift, Heart, Play, Users } from 'lucide-react'
 import type { ClipperRow, VideoRow } from '@/lib/db/board'
 import { compactNumber, money, shortDate } from '@/lib/format'
 import { ALL_TIME } from '@/lib/period'
@@ -9,7 +9,8 @@ import { SettingsDrawer } from '@/components/dashboard/settings-drawer'
 import { cachedClipperDetails, loadClipperDetails, type ClipperDetails } from './clipper-details-cache'
 import styles from './clipper-dialog.module.css'
 import { TikTokPlayer } from './tiktok-player'
-import { DiscordIcon } from '@/components/ui/discord-icon'
+import { DiscordIcon, TikTokIcon } from '@/components/ui/discord-icon'
+import { Avatar } from '@/components/ui/avatar'
 
 /** Perfil do clipper, no mesmo painel lateral do "Participar". */
 export function ClipperDialog({ clipper, slug, periodKey, onClose }: { clipper: ClipperRow; slug: string; periodKey: string; onClose: () => void }) {
@@ -31,16 +32,20 @@ export function ClipperDialog({ clipper, slug, periodKey, onClose }: { clipper: 
   const videos = details?.videos ?? []
   const selectedIndex = selectedVideo ? videos.findIndex(video => video.id === selectedVideo.id) : -1
   return <SettingsDrawer title={row.displayName} closeLabel="Fechar perfil" onClose={onClose}>
-    <div className={styles.drawerIdentity}>
-      <span className={styles.avatar}>{row.avatarUrl && !avatarFailed ?
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={row.avatarUrl} alt={row.displayName} onError={() => setAvatarFailed(true)} /> : row.displayName.slice(0, 2).toUpperCase()}</span>
-      <div className={styles.handles}>
-        {row.username && <a href={`https://www.tiktok.com/@${encodeURIComponent(row.username)}`} target="_blank" rel="noreferrer">@{row.username} <ExternalLink size={12} /></a>}
-      </div>
-      {/* Discord à direita, só quando o clipper o preencheu. */}
-      {details?.discord && <span className={styles.discord} title="Discord"><DiscordIcon />{details.discord}</span>}
-    </div>
+    {/* Igual ao topo da "Conta" do clipper: foto, TikTok e, por baixo, o Discord (sem o email, que é privado). */}
+    <section aria-label="Perfil" className="-mt-4 mb-6 flex flex-wrap items-center gap-6">
+      <Avatar src={avatarFailed ? null : row.avatarUrl} name={row.displayName} size="lg" className="rounded-sm border-0" onError={() => setAvatarFailed(true)} />
+      <dl className="min-w-0 flex-1 space-y-1 text-sm">
+        <dt className="sr-only">TikTok</dt>
+        <dd className="flex items-center gap-1.5 break-all"><TikTokIcon className="shrink-0" />{row.username
+          ? <a href={`https://www.tiktok.com/@${encodeURIComponent(row.username)}`} target="_blank" rel="noreferrer" className="hover:underline underline-offset-4">@{row.username}</a>
+          : row.displayName}</dd>
+        {details?.discord && <>
+          <dt className="sr-only">Discord</dt>
+          <dd className="flex items-center gap-1.5 break-all"><DiscordIcon className="shrink-0 text-[#5865f2]" />{details.discord}</dd>
+        </>}
+      </dl>
+    </section>
     <div className={styles.drawerStats}>
       {[{ label: periodKey === ALL_TIME ? 'Views Totais' : 'Views no Mês', value: compactNumber(row.totalViews), icon: Eye },
         { label: 'Likes', value: compactNumber(row.totalLikes), icon: Heart },

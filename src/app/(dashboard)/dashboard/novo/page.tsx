@@ -5,7 +5,7 @@ import { getMyCreator, getMyLeaderboard } from '@/lib/db/queries'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isStreamPlatform } from '@/lib/streams/model'
 
-export const metadata: Metadata = { title: 'Criar a tua p?gina' }
+export const metadata: Metadata = { title: 'Criar a tua página' }
 
 export default async function NewLeaderboardPage({ searchParams }: { searchParams: Promise<{ preview?: string }> }) {
   const { preview } = await searchParams

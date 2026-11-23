@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 const MONTHLY_FEATURES = [
   {
-    label: 'Sistema de ranking em direto',
+    label: 'Competição em direto',
     icon: BarChart3,
     iconClassName: 'text-violet-400',
   },

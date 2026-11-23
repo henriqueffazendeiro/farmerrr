@@ -18,7 +18,7 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
  */
 export async function saveClipperContactAction(_previous: ContactState, form: FormData): Promise<ContactState> {
   const member = await getClipperMembership(String(form.get('slug') || ''))
-  if (!member) return { error: 'A sessão terminou. Entre novamente com o TikTok.' }
+  if (!member) return { error: 'A sessão terminou. Entra novamente com o TikTok.' }
   const discord = String(form.get('discord') ?? '').trim().replace(/^@/, '')
   const email = String(form.get('email') ?? '').trim().toLowerCase()
   const errors: NonNullable<ContactState['errors']> = {}
@@ -27,7 +27,7 @@ export async function saveClipperContactAction(_previous: ContactState, form: Fo
   if (errors.discord || errors.email) return { errors }
   const { error } = await createAdminClient().from('clipper_profiles')
     .update({ discord: discord || null, email: email || null }).eq('id', member.participant.clipper_profile_id)
-  return error ? { error: 'Não foi possível guardar. Tente novamente.' } : { ok: true }
+  return error ? { error: 'Não foi possível guardar. Tenta novamente.' } : { ok: true }
 }
 
 export async function clipperSignOutAction(form: FormData) {
