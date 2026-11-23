@@ -15,6 +15,17 @@ const env = (name: string) => process.env[name]?.trim() || ''
 export const priceFor = (plan: Plan) => env(plan === 'monthly' ? 'STRIPE_PRICE_MONTHLY' : 'STRIPE_PRICE_YEARLY')
 export const billingConfigured = () => Boolean(env('STRIPE_SECRET_KEY') && priceFor('monthly') && priceFor('yearly'))
 
+/**
+ * O ID guardado não existe nesta conta/modo do Stripe: foi criado com chaves de teste (e agora usamos live),
+ * ou foi apagado no dashboard. Nesses casos cria-se um novo em vez de falhar.
+ */
+export function isStaleStripeId(error: unknown) {
+  const e = error as { code?: string; raw?: { code?: string }; message?: string } | null
+  const code = e?.code ?? e?.raw?.code
+  return code === 'resource_missing' || code === 'account_invalid'
+    || /testmode key|test mode key|livemode key|No such (customer|account)/i.test(e?.message ?? '')
+}
+
 let client: Stripe | null = null
 export function stripe() {
   if (!client) client = new Stripe(env('STRIPE_SECRET_KEY'), { apiVersion: '2025-02-24.acacia', appInfo: { name: 'farmerrr' } })

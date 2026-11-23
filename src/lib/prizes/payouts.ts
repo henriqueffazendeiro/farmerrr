@@ -2,7 +2,7 @@ import 'server-only'
 import type Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicEnv } from '@/lib/config/env'
-import { stripe } from '@/lib/billing/stripe'
+import { isStaleStripeId, stripe } from '@/lib/billing/stripe'
 import type { ClipperPayoutAccount, PrizePayout } from '@/lib/db/types'
 import { prizeTitle } from './payments'
 
@@ -51,6 +51,17 @@ export async function saveStripeAccount(account: Stripe.Account) {
 export async function ensurePayoutAccount(clipperProfileId: string) {
   const db = createAdminClient()
   let row = await payoutAccount(clipperProfileId)
+  let account: Stripe.Account | null = null
+  if (row) {
+    // Confirma que a conta existe neste modo do Stripe: uma conta criada com chaves de teste não serve em live.
+    try { account = await stripe().accounts.retrieve(row.stripe_account_id) } catch (error) {
+      if (!isStaleStripeId(error)) throw error
+      const { error: deleteError } = await db.from('clipper_payout_accounts').delete()
+        .eq('clipper_profile_id', clipperProfileId).eq('stripe_account_id', row.stripe_account_id)
+      if (deleteError) throw deleteError
+      row = null
+    }
+  }
   if (!row) {
     const account = await stripe().accounts.create({
       type: 'express', country: 'PT', business_type: 'individual',
@@ -65,7 +76,7 @@ export async function ensurePayoutAccount(clipperProfileId: string) {
     if (!row) throw new Error('Não foi possível guardar a conta de pagamentos.')
   }
   if (!row.transfers_enabled) {
-    const account = await stripe().accounts.retrieve(row.stripe_account_id)
+    account ??= await stripe().accounts.retrieve(row.stripe_account_id)
     await saveStripeAccount(account)
     row = { ...row, transfers_enabled: account.capabilities?.transfers === 'active', details_submitted: Boolean(account.details_submitted) }
   }

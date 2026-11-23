@@ -3,7 +3,8 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/supabase/server'
 import { publicEnv } from '@/lib/config/env'
-import { billingConfigured, getSubscription, isActive, stripe } from './stripe'
+import { billingConfigured, getSubscription, isActive, isStaleStripeId, stripe } from './stripe'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkoutUrl, safeNext } from './checkout'
 
 const appUrl = () => (publicEnv.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '')
@@ -31,6 +32,17 @@ export async function openBillingPortal() {
   const current = await getSubscription(user.id)
   if (current?.plan === 'cortesia') redirect('/dashboard/subscricao')
   if (!billingConfigured() || !current?.stripe_customer_id || !current.stripe_subscription_id) redirect('/dashboard')
-  const session = await stripe().billingPortal.sessions.create({ customer: current.stripe_customer_id, locale: 'pt', return_url: `${appUrl()}/dashboard` })
-  redirect(session.url)
+  let url: string
+  try {
+    url = (await stripe().billingPortal.sessions.create({ customer: current.stripe_customer_id, locale: 'pt', return_url: `${appUrl()}/dashboard` })).url
+  } catch (error) {
+    if (!isStaleStripeId(error)) throw error
+    // Cliente de teste (ou apagado) não existe no Stripe live: a subscrição antiga deixa de valer
+    // e a página de subscrição passa a oferecer ativá-la.
+    await createAdminClient().from('subscriptions')
+      .update({ stripe_customer_id: null, stripe_subscription_id: null, status: 'canceled' })
+      .eq('profile_id', user.id).eq('stripe_customer_id', current.stripe_customer_id)
+    redirect('/dashboard/subscricao')
+  }
+  redirect(url)
 }

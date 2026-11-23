@@ -13,6 +13,7 @@
     "test:clippers": "node --test scripts/test-clippers.cjs",
     "test:streams": "node --test scripts/test-streams.cjs",
     "stripe:setup": "node scripts/setup-stripe.cjs",
+    "vercel:prod": "node scripts/configure-vercel-production.cjs",
     "test:billing": "node --test scripts/test-billing.cjs",
     "test:prizes": "node --test scripts/test-prizes.cjs"
   },
