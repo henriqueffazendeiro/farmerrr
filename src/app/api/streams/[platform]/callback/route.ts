@@ -10,6 +10,7 @@ import { decryptToken, encryptToken } from '@/lib/crypto/tokens'
 import { isStreamPlatform } from '@/lib/streams/model'
 import { exchangeStreamToken, streamIdentity } from '@/lib/streams/providers'
 import { syncStreamConnection } from '@/lib/streams/sync'
+import { keepOnlyConnection } from '@/lib/streams/connections'
 
 const stateSchema = z.object({ state: z.string(), verifier: z.string(), userId: z.string().uuid(), creatorId: z.string().uuid(), expires: z.number() })
 export async function GET(request: Request, { params }: { params: Promise<{ platform: string }> }) {
@@ -45,6 +46,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ plat
       expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(), status: 'connected', last_error: null,
     }, { onConflict: 'creator_id,platform' }).select('id').single()
     if (error) return done(error.code === '23505' ? 'claimed' : 'error')
+    // O canal novo substitui o anterior; as lives e avaliações antigas ficam guardadas.
+    await keepOnlyConnection(creator.id, data.id)
     try {
       const result = await syncStreamConnection(data.id)
       if ('skipped' in result) return done('sync_pending')

@@ -3,8 +3,17 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { currentVoterHash, ratingOpen } from '@/lib/lives/ratings'
 import type { Live } from '@/components/lives/scale'
+import { isStreamPlatform, type StreamPlatform } from './model'
 
 const missingRelation = (code?: string) => code === '42P01' || code === 'PGRST205'
+
+/** Plataforma onde o streamer faz lives: o canal ligado mais recentemente (pode ter um por plataforma). */
+export async function getCreatorPlatform(creatorId: string): Promise<StreamPlatform | null> {
+  const { data, error } = await createAdminClient().from('stream_connections')
+    .select('platform').eq('creator_id', creatorId).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  if (error) return null
+  return data && isStreamPlatform(data.platform) ? data.platform : null
+}
 
 export async function getCreatorLives(creatorId: string, timezone: string): Promise<Live[]> {
   const db = await createClient()
@@ -30,7 +39,7 @@ export async function getCreatorLives(creatorId: string, timezone: string): Prom
   const statsById = new Map((stats.data || []).map(row => [row.live_id, row]))
   const mineById = new Map((mine.data || []).map(row => [row.live_id, row.score]))
 
-  return rows.reverse().map(row => ({
+  const lives = rows.reverse().map(row => ({
     id: row.id, date: new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date(row.started_at)),
     title: row.title, thumbnail: row.thumbnail_url,
     average: statsById.get(row.id)?.average ?? 0, count: statsById.get(row.id)?.count ?? 0,
@@ -41,4 +50,6 @@ export async function getCreatorLives(creatorId: string, timezone: string): Prom
       : row.platform === 'kick' ? `${row.watch_url.replace(/\/+$/, '')}/videos` : null,
     isLive: row.is_live, platform: row.platform, clips: [],
   }))
+  // Uma live por dia: se houve várias transmissões no mesmo dia, fica só a última (as linhas vêm por ordem de início).
+  return [...new Map(lives.map(live => [live.date, live])).values()]
 }

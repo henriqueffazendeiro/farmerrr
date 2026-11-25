@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { LeaderboardForm } from '@/components/dashboard/leaderboard-form'
 import { StreamConnections } from '@/components/dashboard/stream-connections'
@@ -23,10 +24,13 @@ export async function SettingsContent({ id, streams, premios }: { id: string; st
     StreamerPrizes({ board: leaderboard, notice: premios }),
   ])
 
+  // Esta função é chamada diretamente pela página (não como <SettingsContent />), por isso o React
+  // vê estes filhos como uma lista: cada um precisa de key.
   return (
     <ProfileImageDraft>
-      {account}
+      <Fragment key="account">{account}</Fragment>
       <LeaderboardForm
+        key="form"
         mode="edit"
         action={updateLeaderboardAction}
         creatorName={creator.name}
@@ -35,10 +39,10 @@ export async function SettingsContent({ id, streams, premios }: { id: string; st
         rewards={rewards}
       />
 
-      {prizes}
+      <Fragment key="prizes">{prizes}</Fragment>
 
       {/* ─── Conta ─────────────────────────────────────────────────────── */}
-      <section aria-labelledby="conta-title" className="mt-6 pt-6">
+      <section key="conta" aria-labelledby="conta-title" className="mt-6 pt-6">
         <h3 id="conta-title" className="mb-1.5 text-xs text-fg-muted">Conta</h3>
         <div className="grid grid-cols-2 gap-2">
           <form action={openBillingPortal}><Button type="submit" variant="secondary" className="w-full border-0">Gerir subscrição</Button></form>

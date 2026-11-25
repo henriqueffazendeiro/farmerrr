@@ -8,6 +8,7 @@ import { PUBLIC_STREAM_MARKER, publicStreamsConfigured, readPublicChannel } from
 import { normalizeStreamChannel } from '@/lib/streams/public-input'
 import { trackingRateKey } from '@/lib/auth/rate-key'
 import { syncStreamConnection } from '@/lib/streams/sync'
+import { keepOnlyConnection } from '@/lib/streams/connections'
 
 export const maxDuration = 120
 
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
       access_token_enc: PUBLIC_STREAM_MARKER, refresh_token_enc: null, expires_at: '9999-01-01T00:00:00Z', status: 'connected',
     }).select('id,platform,channel_name,channel_url,status').single()
     if (error) return NextResponse.json({ error: error.code === '23505' ? 'Este canal ou plataforma já está ligado.' : 'Não foi possível guardar o canal.' }, { status: 409 })
+    // O canal novo substitui o anterior; as lives e avaliações antigas ficam guardadas.
+    await keepOnlyConnection(creator.id, data.id)
     let pending = false
     try { await syncStreamConnection(data.id, snapshot) } catch { pending = true }
     revalidatePath('/', 'layout')

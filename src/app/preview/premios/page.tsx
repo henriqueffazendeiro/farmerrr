@@ -44,7 +44,7 @@ export default async function PrizeDuePreviewPage({ searchParams }: { searchPara
     totals={totals}
     clipperSettings={como === 'clipper' ? <ClipperSettingsView preview data={{
       slug: leaderboard.slug, username: 'clipsdoluis', displayName: 'Clips do Luís', avatarUrl: clippers[0]?.avatarUrl ?? null,
-      discord: 'clipsdoluis', email: 'luis@exemplo.com', needsReauth: false,
+      discord: 'clipsdoluis', email: 'luis@exemplo.com', needsReauth: false, banned: null,
       prizes: [demoPrize('outubro', {}),
         demoPrize('setembro', { title: 'Prémios de Setembro', position: 2, amount_cents: 23750, fee_cents: 1250, status: 'paid' }),
         demoPrize('agosto', { title: 'Prémios de Agosto', position: 3, amount_cents: 10000, fee_cents: 0, status: 'paid', manual: true }),

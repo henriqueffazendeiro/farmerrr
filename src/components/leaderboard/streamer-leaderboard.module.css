@@ -18,6 +18,7 @@
 .settingsLink { display: inline-flex; align-items: center; justify-content: center; width: var(--identity-height); height: var(--identity-height); margin-left: -4px; flex-shrink: 0; border: 0; border-radius: var(--radius-ui); background: transparent; color: #fff; cursor: pointer; }
 .settingsLink:hover { background: #343439; }
 .platformYoutube { display: block; width: 20px; height: 14px; flex-shrink: 0; }
+.platformIcon { display: block; width: 16px; height: 16px; flex-shrink: 0; }
 .portrait { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--radius-ui); overflow: hidden; background: #242429; color: #b9b9c2; font-weight: 600; }
 .portrait img { width: 100%; height: 100%; object-fit: cover; }
 .header .identity .portrait { width: var(--identity-height); height: var(--identity-height); border-radius: var(--radius-ui); }

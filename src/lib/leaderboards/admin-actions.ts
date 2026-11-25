@@ -63,11 +63,32 @@ export async function setParticipantStatusAction(formData: FormData) {
   const supabase = await createClient()
   await supabase
     .from('leaderboard_participants')
-    .update({ status })
+    .update(status === 'active' ? { status, ban_reason: null, banned_until: null } : { status })
     .eq('id', participantId)
     .eq('leaderboard_id', leaderboardId)
 
   await refresh(leaderboardId)
+}
+
+/**
+ * Banir a partir do perfil do clipper na página pública (por tempo indeterminado): sai do ranking e dos prémios
+ * e não se pode voltar a inscrever nesta competição. Os vídeos e o histórico ficam guardados.
+ */
+export async function banClipperAction(leaderboardId: string, participantId: string, ban: { reason: string }): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!leaderboardId || !participantId) return { ok: false, error: 'Clipper inválido.' }
+  const reason = String(ban?.reason ?? '').trim()
+  if (!reason) return { ok: false, error: 'Escreve o motivo do banimento.' }
+  if (reason.length > 500) return { ok: false, error: 'O motivo pode ter no máximo 500 caracteres.' }
+  if (!await isOwner(leaderboardId)) return { ok: false, error: 'Só o dono da competição pode banir clippers.' }
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('leaderboard_participants').update({ status: 'disqualified', ban_reason: reason, banned_until: null })
+    .eq('id', participantId).eq('leaderboard_id', leaderboardId).select('id').maybeSingle()
+  if (error || !data) return { ok: false, error: 'Não foi possível banir o clipper. Tenta novamente.' }
+  // Só o ranking desta competição muda: não é preciso recalcular o histórico de todos os clippers (refresh), que era lento.
+  await createAdminClient().rpc('recompute_leaderboard', { p_leaderboard_id: leaderboardId })
+  const slug = await slugOf(leaderboardId)
+  if (slug) { revalidateTag(`lb:${slug}`); revalidatePath(`/${slug}`) }
+  return { ok: true }
 }
 
 /** Exclui um vídeo desta competição (não o apaga nem o afeta noutras). */

@@ -21,6 +21,7 @@ import styles from './streamer-leaderboard.module.css'
 import summary from './competition-summary.module.css'
 import ranking from './ranking.module.css'
 import { ClipperDialog } from './clipper-dialog'
+import { BanClipperDialog } from './ban-clipper-dialog'
 import { SettingsDrawer } from '@/components/dashboard/settings-drawer'
 import type { JoinFormProps } from './join-form'
 import { loadClipperDetails } from './clipper-details-cache'
@@ -41,6 +42,8 @@ type Props = {
   sort: 'views' | 'media'
   demo: boolean
   isLive?: boolean
+  /** Plataforma onde o streamer faz lives (ícone ao lado do estado). */
+  platform?: 'twitch' | 'youtube' | 'kick'
   isOwner?: boolean
   settingsContent?: ReactNode
   lives?: Live[]
@@ -66,6 +69,19 @@ function Portrait({ src, name, className = '' }: { src: string | null; name: str
       <img src={src} alt={name} onError={() => setFailed(true)} /> :
       <span>{name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('')}</span>}
   </span>
+}
+
+function PlatformIcon({ platform }: { platform: 'twitch' | 'youtube' | 'kick' }) {
+  if (platform === 'twitch') return <svg role="img" aria-label="Twitch" className={styles.platformIcon} viewBox="0 0 24 24">
+    <path fill="#9146ff" d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
+  </svg>
+  if (platform === 'kick') return <svg role="img" aria-label="Kick" className={styles.platformIcon} viewBox="0 0 24 24">
+    <path fill="#53fc18" d="M1.333 0h8v5.333H12V2.667h2.667V0h8v8H20v2.667h-2.667v2.666H20V16h2.667v8h-8v-2.667H12v-2.666H9.333V24h-8Z" />
+  </svg>
+  return <svg role="img" aria-label="YouTube" className={styles.platformYoutube} viewBox="0 3.545 24 16.91">
+      <path fill="#fc0034" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
+      <path fill="#fff" d="M9.545 15.568V8.432L15.818 12z" />
+    </svg>
 }
 
 function PodiumSurface({ place }: { place: number }) {
@@ -172,7 +188,7 @@ function CompetitionClock({ target, onEnd }: { target: string; onEnd?: () => voi
   </div>
 }
 
-export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings, settingsOpen: openSettingsFirst = false }: Props) {
+export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippers: serverClippers, totals: serverTotals, rewards, periods, periodKey: serverPeriodKey, demo, isLive, platform = 'youtube', isOwner = false, settingsContent, lives = [], clips = [], prizeDue, prizeNext, clockTarget, clipperSettings, settingsOpen: openSettingsFirst = false }: Props) {
   const router = useRouter()
   // O contador que chegou a zero (quando o servidor manda o do mês seguinte, deixa de contar como terminado).
   // clockTarget null: sem contador (competição de data fixa que já acabou).
@@ -190,6 +206,7 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
   }, [openSettingsFirst])
   const [rulesOpen, setRulesOpen] = useState(false)
   const [selectedClipper, setSelectedClipper] = useState<ClipperRow | null>(null)
+  const [banTarget, setBanTarget] = useState<ClipperRow | null>(null)
   const isActive = lb.status === 'active'
   const name = lb.name
   const liveStatus = isLive ?? (demo ? false : undefined)
@@ -264,12 +281,9 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
           <div>
             <Link href={`/${lb.slug}`}><strong>{name}</strong></Link>
             <span className={styles.identityPlatforms}>
-              <svg role="img" aria-label="YouTube" className={styles.platformYoutube} viewBox="0 3.545 24 16.91">
-                <path fill="#fc0034" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
-                <path fill="#fff" d="M9.545 15.568V8.432L15.818 12z" />
-              </svg>
+              <PlatformIcon platform={platform} />
               <span className={styles.streamStatus} data-live={liveStatus === true} title={demo ? 'Estado ilustrativo da demonstração' : undefined}>
-                <i aria-hidden="true" />{liveStatus === undefined ? 'Estado indisponível' : liveStatus ? 'Em live' : 'Offline'}
+                <i aria-hidden="true" />{liveStatus === undefined ? 'Estado indisponível' : liveStatus ? 'Em direto' : 'Offline'}
               </span>
             </span>
           </div>
@@ -396,7 +410,9 @@ export function StreamerLeaderboard({ leaderboard: lb, datasets, creator, clippe
       </ol>
       <p className={styles.rulesWarning}>Views compradas, clips copiados de outras pessoas ou vídeos que não são sobre {name} levam à desqualificação.</p>
     </SettingsDrawer>}
-    {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)} />}
+    {selectedClipper && <ClipperDialog key={`${selectedClipper.participantId}-${periodKey}`} clipper={selectedClipper} slug={lb.slug} periodKey={periodKey} onClose={() => setSelectedClipper(null)}
+      onBan={isOwner && !demo ? () => { setBanTarget(selectedClipper); setSelectedClipper(null) } : undefined} />}
+    {banTarget && <BanClipperDialog key={banTarget.participantId} leaderboardId={lb.id} participantId={banTarget.participantId} name={banTarget.displayName} onClose={() => setBanTarget(null)} />}
     {/* Depois de "Terminar sessão" já não há definições: o painel fecha sozinho. */}
     {settingsOpen && (isOwner || isClipper) && <SettingsDrawer {...(isOwner ? {} : { title: 'Conta', closeLabel: 'Fechar conta' })} onClose={() => setSettingsOpen(false)}>{isOwner ? settingsContent : clipperSettings}</SettingsDrawer>}
   </div>

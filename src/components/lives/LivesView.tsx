@@ -136,7 +136,6 @@ export function LivesView({ demo, initialLives = [], timezone = 'Europe/Lisbon',
   const monthLives = lives.filter(live => live.date.startsWith(month))
     .map(live => demo ? withVote(live, votes[live.date]) : live.id && ratings[live.id] ? { ...live, ...ratings[live.id] } : live)
   const live = monthLives.find(item => (item.id ?? item.date) === selected) ?? monthLives[monthLives.length - 1]
-  const sameDayLives = live ? monthLives.filter(item => item.date === live.date) : []
   const [year, monthNumber] = month.split('-').map(Number)
   const days = new Date(year, monthNumber, 0).getDate()
   const previous = months.filter(value => value < month).at(-1)
@@ -200,13 +199,12 @@ export function LivesView({ demo, initialLives = [], timezone = 'Europe/Lisbon',
               </div>
             : <div className={styles.score}><Star /><strong>{live.count ? formatScore(scoreOf(live)) : '—'}</strong><span>{live.count ? `(${formatCount(live.count)})` : 'Sem avaliações'}</span></div>}
           <h3 className={styles.title} title={live.title}>{live.title}</h3>
-          {sameDayLives.length > 1 && <select aria-label="Transmissão deste dia" value={live.id ?? live.date} className="my-2 w-full rounded border border-line bg-surface p-2" onChange={event => setSelected(event.target.value)}>
-            {sameDayLives.map(item => <option key={item.id ?? item.date} value={item.id ?? item.date}>{item.platform ? `${item.platform} · ` : ''}{item.title}</option>)}
-          </select>}
           <div className={styles.date}>{dateOf(live.date).toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
           <LiveTag date={live.date} />
-          {!live.open && <p className={styles.closed}>{demo || live.count ? 'A votação desta live já fechou.' : live.isLive ? 'Esta transmissão está em direto.' : 'Transmissão terminada.'}</p>}
-          {live.vod && <a className={styles.vod} href={live.vod} target="_blank" rel="noopener noreferrer">{vodLabel(live)}</a>}
+          {!live.open && (demo || !!live.count || live.isLive) && <p className={styles.closed}>{demo || live.count ? 'A votação desta live já fechou.' : 'Esta transmissão está em direto.'}</p>}
+          {live.vod
+            ? <a className={styles.vod} href={live.vod} target="_blank" rel="noopener noreferrer">{vodLabel(live)}</a>
+            : <span className={`${styles.vod} ${styles.vodOff}`} aria-disabled="true">VOD indisponível</span>}
         </div> : <p className={styles.closed}>Este mês ainda não tem lives. Escolhe outro mês.</p>}
       </aside>
       <div className={styles.gridSide}>

@@ -198,6 +198,8 @@ create table public.leaderboard_participants (
   leaderboard_id     uuid not null references public.leaderboards (id) on delete cascade,
   clipper_profile_id uuid not null references public.clipper_profiles (id) on delete cascade,
   status             participant_status not null default 'active',
+  ban_reason         text check (ban_reason is null or char_length(ban_reason) <= 500),
+  banned_until       timestamptz,
   joined_at          timestamptz not null default now(),
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now(),

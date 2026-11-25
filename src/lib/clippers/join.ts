@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { banExpired } from './bans'
 import { encryptOptional, encryptToken } from '@/lib/crypto/tokens'
 import type { ProviderAccount, ProviderTokens } from '@/lib/providers/types'
 import type { SocialProviderId } from '@/lib/db/types'
@@ -9,6 +10,8 @@ export type JoinResult = {
   participantId: string
   socialAccountId: string
   alreadyMember: boolean
+  /** Banido nesta competição: entra na conta só para ver o pop-up "Banido" (não volta ao ranking). */
+  banned?: boolean
 }
 
 /**
@@ -115,22 +118,26 @@ export async function connectAccountToLeaderboard(options: {
   // 2. Participação nesta competição.
   const { data: participation, error: participationError } = await admin
     .from('leaderboard_participants')
-    .select('id, status')
+    .select('id, status, ban_reason, banned_until')
     .eq('leaderboard_id', leaderboardId)
     .eq('clipper_profile_id', clipperProfileId)
     .maybeSingle()
 
   let participantId: string
   if (participationError) throw participationError
-  if (participation?.status === 'disqualified') throw new Error('A participação nesta competição foi desqualificada.')
+  // Banido: só volta quando o ban tiver data de fim e ela já tiver passado. Até lá, entra na conta
+  // apenas para ver o pop-up "Banido" (sem importar clips nem voltar ao ranking).
+  if (participation?.status === 'disqualified' && !banExpired(participation)) {
+    return { participantId: participation.id, socialAccountId, alreadyMember: true, banned: true }
+  }
   const alreadyMember = Boolean(participation)
 
   if (participation) {
     participantId = participation.id
-    if (participation.status === 'left') {
+    if (participation.status !== 'active') {
       const { error } = await admin
         .from('leaderboard_participants')
-        .update({ status: 'active' })
+        .update({ status: 'active', ban_reason: null, banned_until: null })
         .eq('id', participation.id)
       if (error) throw error
     }

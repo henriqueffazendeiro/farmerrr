@@ -24,6 +24,8 @@ export type ClipperSettingsData = {
   /** null: pagamentos de prémios desligados. */
   prizes: ClipperPrize[] | null
   payoutAccount: Pick<ClipperPayoutAccount, 'transfers_enabled' | 'details_submitted'> | null
+  /** Banido pelo streamer nesta competição (com o motivo, se houver). */
+  banned: { reason: string | null } | null
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -100,5 +102,6 @@ export async function clipperSettingsData(slug: string): Promise<ClipperSettings
     email: profile?.email ?? null,
     needsReauth: !!account && account.status !== 'connected',
     prizes, payoutAccount: payout,
+    banned: participant.status === 'disqualified' ? { reason: participant.ban_reason ?? null } : null,
   }
 }

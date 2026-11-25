@@ -4,7 +4,7 @@ import { StreamerLeaderboard } from '@/components/leaderboard/streamer-leaderboa
 import { getClippers, getCreatorOf, getLeaderboardBySlug, getLeaderboardTotals, getRewards, getVideos, isDemoLeaderboard } from '@/lib/leaderboards/public-data'
 import { liveDateFromCaption, type LiveClip } from '@/components/lives/live-clips'
 import { ALL_TIME, availablePeriods, currentPeriodEnd } from '@/lib/period'
-import { getCreatorLives } from '@/lib/streams/data'
+import { getCreatorLives, getCreatorPlatform } from '@/lib/streams/data'
 import { getCurrentUser } from '@/lib/supabase/server'
 import { SettingsContent } from '@/components/dashboard/settings-content'
 import { joinFormProps } from '@/components/leaderboard/join-content'
@@ -17,6 +17,7 @@ import { prizeNotices } from '@/components/prizes/clipper-prizes'
 import { streamerPrizeNotices } from '@/components/prizes/streamer-prizes'
 import { withdrawPrizesAction } from '@/lib/prizes/actions'
 import { money } from '@/lib/format'
+import { BannedPopup } from '@/components/clipper/banned-popup'
 
 export const revalidate = 60
 
@@ -74,10 +75,11 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
       return { wall: all.filter(video => wall.has(video.id)), all }
     })
   const accessPromise = demo ? Promise.resolve(true) : creatorHasAccess(leaderboard.creator_id)
-  const [creator, datasets, rewards, baseLives, settingsContent, videos, access, [prizeDue, prizeNext], clipperData] = await Promise.all([
+  const [creator, datasets, rewards, baseLives, settingsContent, videos, access, [prizeDue, prizeNext], clipperData, connectedPlatform] = await Promise.all([
     creatorPromise, datasetsPromise, getRewards(leaderboard),
     demo ? Promise.resolve([]) : getCreatorLives(leaderboard.creator_id, leaderboard.timezone),
     settingsPromise, videosPromise, accessPromise, prizePromise, clipperPromise,
+    demo ? Promise.resolve(null) : getCreatorPlatform(leaderboard.creator_id),
   ])
   const isOwner = settingsContent !== undefined
   // Sem subscrição ativa: os visitantes veem "em pausa"; o dono vê a página com um aviso.
@@ -114,22 +116,26 @@ export default async function PublicLeaderboardPage({ params, searchParams }: Pr
   // Só os prémios desta competição (os ganhos de cada streamer nunca se misturam).
   const available = (clipperData?.prizes ?? []).filter(prize => prize.status === 'available')
   const availableCents = available.reduce((sum, prize) => sum + prize.amount_cents, 0)
-  const showPrizeReady = availableCents > 0 && !premios && entrou !== '1'
+  // Clipper banido: só vê o pop-up "Banido" (não se fecha), sem a Conta nem os outros pop-ups.
+  const banned = clipperData?.banned ?? null
+  const showPrizeReady = !banned && availableCents > 0 && !premios && entrou !== '1'
   return <>{!access && <OwnerPausedOverlay slug={leaderboard.slug} />}<StreamerLeaderboard leaderboard={leaderboard} creator={creator} datasets={datasets} join={joinFormProps(leaderboard)}
     isOwner={isOwner} settingsContent={settingsContent} prizeDue={prizeDue} prizeNext={prizeNext} clockTarget={currentPeriodEnd(leaderboard)}
-    clipperSettings={clipperData ? <ClipperSettingsView data={clipperData} premios={clipperNotice} /> : undefined}
-    settingsOpen={clipperNotice != null || (isOwner && ownerNotice != null)}
+    clipperSettings={clipperData && !banned ? <ClipperSettingsView data={clipperData} premios={clipperNotice} /> : undefined}
+    settingsOpen={(!banned && clipperNotice != null) || (isOwner && ownerNotice != null)}
     clippers={clippers} totals={totals} rewards={rewards}
     periods={periods} periodKey={periodKey}
-    sort={ordem === 'media' ? 'media' : 'views'} demo={isDemoLeaderboard(leaderboard.id)} lives={lives} clips={clips} isLive={lives.some(live => live.isLive)} />
+    sort={ordem === 'media' ? 'media' : 'views'} demo={isDemoLeaderboard(leaderboard.id)} lives={lives} clips={clips} isLive={lives.some(live => live.isLive)}
+    platform={lives.find(live => live.isLive)?.platform ?? connectedPlatform ?? lives[0]?.platform} />
     {isOwner && criada === '1' && <PageReady />}
     {isOwner && premios === 'pago' && <PageReady param="premios" title="Prémios pagos" celebration="money"
       image="https://cdn.7tv.app/emote/01HRBKB9T000072EX513ZQ4552/4x.png"
       description="Os vencedores já podem levantar os prémios para o IBAN." action="Fechar" />}
-    {clipperData && entrou === '1' && <PageReady param="entrou" title="Inscrição feita"
+    {banned && <BannedPopup slug={leaderboard.slug} reason={banned.reason} />}
+    {clipperData && !banned && entrou === '1' && <PageReady param="entrou" title="Inscrição feita"
       description="A conta do TikTok está ligada."
       action="Ver competição" />}
-    {withdrawn && <PageReady param={['premios', 'valor']} title="Prémio levantado" celebration="money"
+    {withdrawn && !banned && <PageReady param={['premios', 'valor']} title="Prémio levantado" celebration="money"
       image="https://cdn.7tv.app/emote/01HRBKB9T000072EX513ZQ4552/4x.png"
       description={`Parabéns! ${Number.isFinite(withdrawnCents) && withdrawnCents > 0 ? money(withdrawnCents) : 'O prémio'} a caminho do IBAN. O dinheiro chega em poucos dias úteis.`}
       action="Fechar" />}

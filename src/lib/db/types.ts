@@ -81,6 +81,9 @@ export type LeaderboardParticipant = {
   leaderboard_id: string
   clipper_profile_id: string
   status: ParticipantStatus
+  /** Ban feito pelo streamer: motivo e fim (vazio com 'disqualified' = tempo indeterminado). */
+  ban_reason: string | null
+  banned_until: string | null
   joined_at: string
   created_at: string
   updated_at: string

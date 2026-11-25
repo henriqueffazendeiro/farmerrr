@@ -6,6 +6,7 @@ import { slugify, validateSlug } from '@/lib/slug'
 import { normalizeStreamChannel } from '@/lib/streams/public-input'
 import { PUBLIC_STREAM_MARKER, readPublicChannel, type PublicChannelSnapshot } from '@/lib/streams/public-provider'
 import { syncStreamConnection } from '@/lib/streams/sync'
+import { keepOnlyConnection } from '@/lib/streams/connections'
 import { onboardingSchema, type OnboardingInput } from './schema'
 
 export type CreatedPage = { error?: string; slug?: string; notice?: string }
@@ -65,6 +66,7 @@ export async function createOnboardingPage(user: { id: string }, values: Onboard
     if (error || !data) return { error: error?.code === '23505' ? 'Esta conta já está ligada a uma página. Confirma a conta e tenta novamente.' : 'Não foi possível guardar a conta. Tenta novamente.' }
     connectionId = data.id
   }
+  await keepOnlyConnection(creator.id, connectionId)
   let notice: string | undefined
   try { await syncStreamConnection(connectionId, snapshot) }
   catch { notice = 'A conta ficou guardada. A consulta das lives será repetida automaticamente.' }

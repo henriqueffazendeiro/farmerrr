@@ -4,7 +4,7 @@ import { streamPlatforms } from '@/lib/streams/model'
 import { isPublicMarker, publicStreamsConfigured } from '@/lib/streams/public-provider'
 
 const messages: Record<string, string> = {
-  connected: 'Canal ligado. As próximas lives serão registadas no Absolute Cinema.',
+  connected: 'Canal ligado. As próximas lives serão registadas no Absolute Cinema e as anteriores continuam guardadas.',
   disconnected: 'Canal desligado. As lives anteriores continuam guardadas.',
   checked: 'Verificação concluída.', recent: 'O canal foi verificado há menos de um minuto.',
   cancelled: 'A ligação foi cancelada.', invalid: 'A ligação expirou. Tenta novamente.',

@@ -11,9 +11,10 @@ import styles from './clipper-dialog.module.css'
 import { TikTokPlayer } from './tiktok-player'
 import { DiscordIcon, TikTokIcon } from '@/components/ui/discord-icon'
 import { Avatar } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 
 /** Perfil do clipper, no mesmo painel lateral do "Participar". */
-export function ClipperDialog({ clipper, slug, periodKey, onClose }: { clipper: ClipperRow; slug: string; periodKey: string; onClose: () => void }) {
+export function ClipperDialog({ clipper, slug, periodKey, onClose, onBan }: { clipper: ClipperRow; slug: string; periodKey: string; onClose: () => void; /** Só para o dono: abre o pop-up para banir este clipper. */ onBan?: () => void }) {
   const [details, setDetails] = useState<ClipperDetails | null>(() => cachedClipperDetails(slug, clipper.participantId, periodKey))
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -46,6 +47,7 @@ export function ClipperDialog({ clipper, slug, periodKey, onClose }: { clipper: 
         </>}
       </dl>
     </section>
+    {onBan && <Button type="button" variant="danger" className="mb-6 w-full border-0 bg-danger/10 hover:bg-danger/20" onClick={onBan}>Banir</Button>}
     <div className={styles.drawerStats}>
       {[{ label: periodKey === ALL_TIME ? 'Views Totais' : 'Views no Mês', value: compactNumber(row.totalViews), icon: Eye },
         { label: 'Likes', value: compactNumber(row.totalLikes), icon: Heart },
@@ -72,3 +74,4 @@ export function ClipperDialog({ clipper, slug, periodKey, onClose }: { clipper: 
       onNext={selectedIndex >= 0 && selectedIndex < videos.length - 1 ? () => setSelectedVideo(videos[selectedIndex + 1]) : undefined} />}
   </SettingsDrawer>
 }
+
