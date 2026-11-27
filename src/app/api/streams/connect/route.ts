@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const { data, error } = await db.from('stream_connections').insert({ creator_id: creator.id, platform: input.platform, ...identity,
       access_token_enc: PUBLIC_STREAM_MARKER, refresh_token_enc: null, expires_at: '9999-01-01T00:00:00Z', status: 'connected',
     }).select('id,platform,channel_name,channel_url,status').single()
-    if (error) return NextResponse.json({ error: error.code === '23505' ? 'Este canal ou plataforma já está ligado.' : 'Não foi possível guardar o canal.' }, { status: 409 })
+    if (error) return NextResponse.json({ error: error.code === '23505' ? 'Já tens um canal ligado nesta plataforma.' : 'Não foi possível guardar o canal.' }, { status: 409 })
     // O canal novo substitui o anterior; as lives e avaliações antigas ficam guardadas.
     await keepOnlyConnection(creator.id, data.id)
     let pending = false

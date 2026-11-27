@@ -10,7 +10,7 @@ const messages: Record<string, string> = {
   cancelled: 'A ligação foi cancelada.', invalid: 'A ligação expirou. Tenta novamente.',
   unavailable: 'Esta plataforma ainda não está disponível.', error: 'Não foi possível concluir. Tenta novamente.',
   sync_pending: 'Canal ligado. A primeira verificação não terminou; vamos tentar novamente.',
-  claimed: 'Este canal já está ligado a outro perfil no farmerrr.',
+  claimed: 'Já tens um canal ligado nesta plataforma. Tenta novamente.',
   busy: 'Não foi possível alterar a ligação durante uma verificação. Tenta novamente dentro de alguns minutos.',
   offline_access: 'Autoriza o acesso contínuo ao canal para podermos detetar lives quando não estás no site.',
 }

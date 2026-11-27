@@ -63,7 +63,7 @@ export async function createOnboardingPage(user: { id: string }, values: Onboard
       access_token_enc: PUBLIC_STREAM_MARKER, refresh_token_enc: null,
       expires_at: '9999-01-01T00:00:00Z', status: 'connected',
     }).select('id').single()
-    if (error || !data) return { error: error?.code === '23505' ? 'Esta conta já está ligada a uma página. Confirma a conta e tenta novamente.' : 'Não foi possível guardar a conta. Tenta novamente.' }
+    if (error || !data) return { error: error?.code === '23505' ? 'Já tens uma conta ligada nesta plataforma. Tenta novamente.' : 'Não foi possível guardar a conta. Tenta novamente.' }
     connectionId = data.id
   }
   await keepOnlyConnection(creator.id, connectionId)
