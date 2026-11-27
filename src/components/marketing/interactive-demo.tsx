@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import localFont from 'next/font/local'
 import { LockKeyhole, Maximize2, Minimize2, Play, RotateCw, X } from 'lucide-react'
 import { Container } from '@/components/ui/container'
-import { DEMO_SLUG } from '@/lib/leaderboards/demo'
 
 const annotationFont = localFont({
   src: '../../../public/fonts/fuzzy-bubbles/FuzzyBubbles-Regular.ttf',
@@ -14,7 +13,8 @@ const annotationFont = localFont({
 })
 
 export function InteractiveDemo() {
-  const href = `/${DEMO_SLUG}`
+  // Página de demonstração real (Streamer Demo), com clippers e lives inventados.
+  const href = '/streamer-demo'
   const [showRecap, setShowRecap] = useState(false)
   const activeHref = showRecap ? '/recap.html' : href
   const frame = useRef<HTMLDivElement>(null)
@@ -109,7 +109,7 @@ export function InteractiveDemo() {
             key={activeHref}
             ref={preview}
             src={activeHref}
-            title={showRecap ? 'Recap de setembro' : 'Demo da competição de clippers de Luís Ferreira'}
+            title={showRecap ? 'Recap de setembro' : 'Demo da competição de clippers do Streamer Demo'}
             loading="lazy"
             className={`block w-full border-0 bg-canvas ${expanded ? 'h-full' : 'h-[430px] sm:h-[850px]'}`}
           />
