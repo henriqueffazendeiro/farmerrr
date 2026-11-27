@@ -9,7 +9,9 @@ type PlayerVideo = { provider_video_id?: string; url: string | null; caption: st
 export function TikTokPlayer({ video, onClose, onPrevious, onNext }: { video: PlayerVideo; onClose: () => void; onPrevious?: () => void; onNext?: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const videoId = video.provider_video_id && /^\d+$/.test(video.provider_video_id) ? video.provider_video_id : video.url?.match(/\/(?:video|embed\/v2|player\/v1)\/(\d+)/)?.[1]
-  const externalUrl = video.url ?? (videoId ? `https://www.tiktok.com/@_/video/${videoId}` : null)
+  // Vídeos inventados da página de demonstração: não há TikTok para mostrar.
+  const isDemo = /^(demo|ficticio)-/.test(video.provider_video_id ?? '')
+  const externalUrl = isDemo ? null : video.url ?? (videoId ? `https://www.tiktok.com/@_/video/${videoId}` : null)
 
   useLayoutEffect(() => {
     const element = dialog.current
@@ -27,7 +29,8 @@ export function TikTokPlayer({ video, onClose, onPrevious, onNext }: { video: Pl
     onClick={event => { event.stopPropagation(); if (event.target === event.currentTarget) onClose() }}>
     <div className={styles.content}>
       <div className={styles.videoFrame}>
-      {videoId ? <iframe key={videoId} className={styles.player}
+      {isDemo ? <div className={styles.demo}><strong>Isto é um demo</strong><span>Numa página real, o TikTok do clipper aparece aqui.</span></div>
+        : videoId ? <iframe key={videoId} className={styles.player}
         src={`https://www.tiktok.com/player/v1/${videoId}?autoplay=1&rel=0`}
         title={video.caption ?? 'Vídeo do TikTok'} allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowFullScreen />
         : <p className={styles.unavailable}>Não foi possível carregar este vídeo.</p>}

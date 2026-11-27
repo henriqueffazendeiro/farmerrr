@@ -48,6 +48,9 @@
 .control:hover:not(:disabled) { background: var(--color-surface-3); }
 .control:disabled { opacity: .3; cursor: default; }
 .control:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 3px; }
+.demo { display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center; background: var(--color-surface-2); border-radius: inherit; }
+.demo strong { font-size: 22px; font-weight: 700; color: var(--color-fg); }
+.demo span { max-width: 22ch; font-size: 14px; line-height: 1.4; color: var(--color-fg-muted); }
 .unavailable { padding: 24px; font-size: 14px; color: var(--color-fg-muted); }
 @keyframes enter { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .content { animation: none; } }
