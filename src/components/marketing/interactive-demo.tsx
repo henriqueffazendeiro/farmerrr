@@ -48,6 +48,15 @@ export function InteractiveDemo() {
     return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', close) }
   }, [fallbackExpanded])
 
+  // Diz à página do demo se a janela está pequena (não expandida), para alargar a aba lateral (ex.: ao abrir um clipper).
+  const markFrame = () => {
+    const root = preview.current?.contentDocument?.documentElement
+    if (!root) return
+    if (expanded) delete root.dataset.demoCollapsed
+    else root.dataset.demoCollapsed = ''
+  }
+  useEffect(markFrame)
+
   const toggleFullscreen = async () => {
     if (fallbackExpanded) { setFallbackExpanded(false); setExpanded(false); return }
     try {
@@ -108,6 +117,7 @@ export function InteractiveDemo() {
           <iframe
             key={activeHref}
             ref={preview}
+            onLoad={markFrame}
             src={activeHref}
             title={showRecap ? 'Recap de setembro' : 'Demo da competição de clippers do Streamer Demo'}
             loading="lazy"

@@ -81,3 +81,8 @@
 @media (prefers-reduced-motion: reduce) {
   .drawer[open], .drawer::backdrop { animation: none; }
 }
+
+/* Demo da página inicial com a janela pequena (não expandida): a aba ocupa mais largura. */
+@media (min-width: 640px) {
+  :global(html[data-demo-collapsed]) .drawer { width: 55vw; }
+}
