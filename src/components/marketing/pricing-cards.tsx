@@ -29,7 +29,7 @@ const ANNUAL_FEATURES = [
 ] as const
 
 // Sem borda no botão secundário (plano mensal).
-const noBorder = (variant: string) => variant === 'secondary' ? 'border-transparent hover:border-transparent' : ''
+const noBorder = (variant: string) => variant === 'secondary' ? 'border-0' : ''
 
 const PLANS = [
   {
