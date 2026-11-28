@@ -28,6 +28,9 @@ const ANNUAL_FEATURES = [
   },
 ] as const
 
+// Sem borda no botão secundário (plano mensal).
+const noBorder = (variant: string) => variant === 'secondary' ? 'border-transparent hover:border-transparent' : ''
+
 const PLANS = [
   {
     id: 'monthly',
@@ -35,7 +38,7 @@ const PLANS = [
     description: 'Perfeito para começar',
     price: '25 €',
     cadence: '/mês',
-    buttonVariant: 'primary',
+    buttonVariant: 'secondary',
     featured: false,
     features: MONTHLY_FEATURES,
     extra: {
@@ -51,7 +54,7 @@ const PLANS = [
     description: 'Para fazeres disto parte da tua stream',
     price: '200 €',
     cadence: '/ano',
-    buttonVariant: 'secondary',
+    buttonVariant: 'primary',
     featured: true,
     features: ANNUAL_FEATURES,
     extra: {
@@ -107,9 +110,10 @@ export function PricingCards({ checkout, className }: { checkout?: { action: (fo
             />
             <span className="font-medium text-fg">{plan.extra.label}</span>
             {'badge' in plan.extra ? (
-              <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xs bg-[#dcf7cd] px-2 pt-[5px] pb-[3px] text-[11px] leading-none font-[300] text-[#6f995d]">
-                {plan.extra.badge}
-                <LoaderCircle aria-hidden="true" className="relative -top-px h-3 w-3 motion-safe:[animation:spin_2s_linear_infinite]" />
+              <span className="ml-auto inline-flex h-5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xs bg-[#dcf7cd] px-2 text-[11px] leading-none font-[300] text-[#6f995d]">
+                {/* Corta o espaço acima/abaixo das letras para ficarem centradas igual em todos os aparelhos. */}
+                <span className="[text-box:trim-both_cap_alphabetic]">{plan.extra.badge}</span>
+                <LoaderCircle aria-hidden="true" strokeWidth={3} className="h-3 w-3 motion-safe:[animation:spin_2s_linear_infinite]" />
               </span>
             ) : null}
           </div>
@@ -120,14 +124,14 @@ export function PricingCards({ checkout, className }: { checkout?: { action: (fo
             <form action={checkout.action} className="mt-6">
               <input type="hidden" name="plan" value={plan.id} />
               <input type="hidden" name="next" value={checkout.next} />
-              <Button type="submit" size="lg" variant={plan.buttonVariant} className="w-full">{checkout.label}</Button>
+              <Button type="submit" size="lg" variant={plan.buttonVariant} className={cn('w-full', noBorder(plan.buttonVariant))}>{checkout.label}</Button>
             </form>
           ) : (
             <ButtonLink
               href="/entrar?seguinte=/dashboard/novo"
               size="lg"
               variant={plan.buttonVariant}
-              className="mt-6 w-full"
+              className={cn('mt-6 w-full', noBorder(plan.buttonVariant))}
             >
               Começar
             </ButtonLink>

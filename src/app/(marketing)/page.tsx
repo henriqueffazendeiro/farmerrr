@@ -38,7 +38,7 @@ export default function LandingPage() {
             <ButtonLink href="/entrar?seguinte=/dashboard/novo" size="lg" className="box-border h-full min-w-0 flex-1 border border-transparent bg-clip-padding px-3 text-base sm:flex-none sm:px-6">
               Começar
             </ButtonLink>
-            <ButtonLink href="#como-funciona" size="lg" variant="secondary" className="box-border h-full min-w-0 flex-1 px-3 text-base sm:flex-none sm:px-6">
+            <ButtonLink href="#como-funciona" size="lg" variant="secondary" className="box-border border-transparent hover:border-transparent h-full min-w-0 flex-1 px-3 text-base sm:flex-none sm:px-6">
               Como funciona
             </ButtonLink>
           </div>
